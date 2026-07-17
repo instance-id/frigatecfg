@@ -173,7 +173,7 @@ def probe_onvif(ip: str, port: int = 80, username: str = "admin", password: str 
             "hardware": getattr(dev_info, "HardwareId", "Unknown"),
         }
 
-        # Media service — get stream profiles
+        # Media service - get stream profiles
         media_service = cam.create_media_service()
         profiles = media_service.GetProfiles()
 
@@ -247,7 +247,7 @@ def probe_onvif(ip: str, port: int = 80, username: str = "admin", password: str 
     except Exception as e:
         err_msg = str(e).lower()
         if "auth" in err_msg or "401" in err_msg or "unauthorized" in err_msg:
-            result["error"] = "Authentication failed — check credentials"
+            result["error"] = "Authentication failed - check credentials"
         elif "connection" in err_msg or "refused" in err_msg:
             result["error"] = f"Connection failed to {ip}:{port}"
         elif "timeout" in err_msg or "timed out" in err_msg:
@@ -310,9 +310,9 @@ def verify_stream(url: str, timeout: float = 10.0) -> dict[str, Any]:
         else:
             stderr = result.stderr.strip().lower()
             if "401" in stderr or "unauthorized" in stderr:
-                return {"success": False, "message": "Authentication failed — check credentials"}
+                return {"success": False, "message": "Authentication failed - check credentials"}
             if "404" in stderr or "not found" in stderr:
-                return {"success": False, "message": "Stream path not found — check URL"}
+                return {"success": False, "message": "Stream path not found - check URL"}
             if "connection refused" in stderr:
                 return {"success": False, "message": f"Connection refused by {host}:{port}"}
             if "timeout" in stderr or "timed out" in stderr:
@@ -367,7 +367,7 @@ def discover_camera(ip: str, username: str = "admin", password: str = "",
         for k, b, s in brand_matches
     ]
 
-    # 3. ONVIF probe — try detected ONVIF port, then common ports
+    # 3. ONVIF probe - try detected ONVIF port, then common ports
     onvif_ports_to_try = []
     if onvif_port:
         onvif_ports_to_try.append(onvif_port)
@@ -388,7 +388,7 @@ def discover_camera(ip: str, username: str = "admin", password: str = "",
             result["onvif"] = onvif_result
             break
         elif "auth" in onvif_result.get("error", "").lower():
-            # Auth failed — stop trying, user needs correct creds
+            # Auth failed - stop trying, user needs correct creds
             onvif_result["port"] = op
             result["onvif"] = onvif_result
             break

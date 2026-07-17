@@ -87,7 +87,7 @@ def update_credential(cred_id: int):
 
     success_msg = f"Updated credential: {name}"
     if updated_cameras:
-        success_msg += f" — also updated {len(updated_cameras)} camera(s): {', '.join(updated_cameras)}"
+        success_msg += f" - also updated {len(updated_cameras)} camera(s): {', '.join(updated_cameras)}"
 
     return render_template("partials/credentials.html",
                            credentials=_creds_with_counts(),

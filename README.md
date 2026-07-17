@@ -43,27 +43,27 @@ I built this for my own use, but I'm sharing it in case it's useful for others.
 ### Camera Management
 
 - **Add / edit / delete / reorder** cameras via form-based UI
-- **go2rtc stream management** — automatically links go2rtc streams to camera ffmpeg inputs
-- **Camera metadata** — store notes, location, manufacturer, model, firmware version, serial number per camera (stored in SQLite, not Frigate config)
-- **Per-stream RTSP testing** — verify each stream independently with ffprobe
+- **go2rtc stream management** - automatically links go2rtc streams to camera ffmpeg inputs
+- **Camera metadata** - store notes, location, manufacturer, model, firmware version, serial number per camera (stored in SQLite, not Frigate config)
+- **Per-stream RTSP testing** - verify each stream independently with ffprobe
 
 ### Camera Discovery
 
-- **Network scan** — scan a /24 range for devices with camera ports open
-- **Single camera discovery** — enter an IP + credentials, get full discovery results
-- **ONVIF probing** — retrieve device info (manufacturer, model, firmware, serial), stream profiles (resolution, bitrate, FPS), and capabilities (PTZ, audio, analytics, imaging)
-- **Stream URL suggestions** — brand-specific RTSP URL templates with credential substitution
-- **Stream verification** — ffprobe-based testing of discovered streams
-- **Custom brands** — add new brands or override existing ones (add ports, change URL templates)
-- **One-click add from discovery** — add a discovered camera directly to your Frigate config with streams pre-configured
+- **Network scan** - scan a /24 range for devices with camera ports open
+- **Single camera discovery** - enter an IP + credentials, get full discovery results
+- **ONVIF probing** - retrieve device info (manufacturer, model, firmware, serial), stream profiles (resolution, bitrate, FPS), and capabilities (PTZ, audio, analytics, imaging)
+- **Stream URL suggestions** - brand-specific RTSP URL templates with credential substitution
+- **Stream verification** - ffprobe-based testing of discovered streams
+- **Custom brands** - add new brands or override existing ones (add ports, change URL templates)
+- **One-click add from discovery** - add a discovered camera directly to your Frigate config with streams pre-configured
 
 ### Stored Credentials
 
-- **Credential management page** — create, edit, and delete named credential sets (username/password pairs)
-- **Environment variable loading** — credentials loaded from `.env` file on startup (e.g. `CREDENTIAL_USERNAME_REOLINK_1`, `CREDENTIAL_PASSWORD_REOLINK_1`)
-- **Credential assignment per camera** — assign a stored credential set or enter manual credentials per camera
-- **Apply credentials to streams** — inject username/password into all go2rtc stream URLs for a camera with one click
-- **Credential update propagation** — updating a stored credential automatically updates stream URLs for all cameras using it
+- **Credential management page** - create, edit, and delete named credential sets (username/password pairs)
+- **Environment variable loading** - credentials loaded from `.env` file on startup (e.g. `CREDENTIAL_USERNAME_REOLINK_1`, `CREDENTIAL_PASSWORD_REOLINK_1`)
+- **Credential assignment per camera** - assign a stored credential set or enter manual credentials per camera
+- **Apply credentials to streams** - inject username/password into all go2rtc stream URLs for a camera with one click
+- **Credential update propagation** - updating a stored credential automatically updates stream URLs for all cameras using it
 
 ### Config Section Editors
 
@@ -71,29 +71,29 @@ I built this for my own use, but I'm sharing it in case it's useful for others.
   - MQTT, Detectors, Database, TLS, Networking, Proxy, Authentication
   - Notifications, Birdseye, Audio, Record, Snapshots, Live
   - Motion, Objects, Zones, Camera Groups, Telemetry, Environment
-- Schema-driven UI — fields, types, defaults, and descriptions defined in `config_schema.py`
+- Schema-driven UI - fields, types, defaults, and descriptions defined in `config_schema.py`
 - Dict collections (detectors, objects, zones) with add/remove key-value pairs
 
 ### Version History & Undo/Redo
 
 - Every config save creates a versioned snapshot in SQLite
-- **Undo/Redo** — revert or reapply changes at the section level
-- **Version History** — view and restore any past config version
+- **Undo/Redo** - revert or reapply changes at the section level
+- **Version History** - view and restore any past config version
 - Old config state stored per-section for precise undo
 
 ### Docker Integration
 
 - **Restart Frigate** container directly from the UI after making changes
-- **Live status** — Frigate container running/stopped indicator (auto-refreshing)
+- **Live status** - Frigate container running/stopped indicator (auto-refreshing)
 - Uses Docker socket mounted into the container
 
 ### UI / UX
 
-- **HTMX** — dynamic content updates without full page reloads
-- **SASS** — compiled to CSS at startup, dark theme
+- **HTMX** - dynamic content updates without full page reloads
+- **SASS** - compiled to CSS at startup, dark theme
 - **Responsive sidebar** layout with collapsible navigation
 - **Live status indicators** and action feedback
-- **Inline result feedback** — success/error messages for all async operations (stream tests, credential application, discovery)
+- **Inline result feedback** - success/error messages for all async operations (stream tests, credential application, discovery)
 
 ## Quick Start
 
@@ -168,8 +168,8 @@ services:
 | `FRIGATE_DOCKER_HOST`        | `unix:///var/run/docker.sock` | Docker socket path                                |
 | `FRIGATE_CONFIG_DIR`         | `../config`                   | Host directory mounted as `/config` (compose var) |
 | `SECRET_KEY`                 | `frigatecfg-dev-key`          | Flask secret key for sessions                     |
-| `CREDENTIAL_USERNAME_<NAME>` | —                             | Stored credential username (loaded from `.env`)   |
-| `CREDENTIAL_PASSWORD_<NAME>` | —                             | Stored credential password (loaded from `.env`)   |
+| `CREDENTIAL_USERNAME_<NAME>` | -                             | Stored credential username (loaded from `.env`)   |
+| `CREDENTIAL_PASSWORD_<NAME>` | -                             | Stored credential password (loaded from `.env`)   |
 
 ### Stored Credentials via .env
 
@@ -231,8 +231,8 @@ frigatecfg/
 
 System packages (in Dockerfile):
 
-- `ffmpeg` — provides `ffprobe` for RTSP stream verification
-- `docker.io` — provides Docker CLI for Frigate container restart/status
+- `ffmpeg` - provides `ffprobe` for RTSP stream verification
+- `docker.io` - provides Docker CLI for Frigate container restart/status
 
 ## Development
 

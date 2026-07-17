@@ -134,7 +134,7 @@ def edit_camera(name):
             roles = inp.get("roles", [])
             stream_roles[stream_name] = roles[0] if roles else "record"
 
-    # Current live stream name (from live.streams dict — first value)
+    # Current live stream name (from live.streams dict - first value)
     live_streams = camera.get("live", {}).get("streams", {})
     live_stream_name = list(live_streams.values())[0] if live_streams else ""
 
@@ -175,7 +175,7 @@ def update_camera_route(name):
         models.rename_camera_metadata(name, new_name)
         name = new_name
 
-    # Parse streams — always update, even if empty, to sync ffmpeg inputs
+    # Parse streams - always update, even if empty, to sync ffmpeg inputs
     streams = parse_streams_from_form(request.form)
     stream_roles = parse_stream_roles_from_form(request.form)
     if streams:
@@ -317,7 +317,7 @@ def parse_camera_from_form(form) -> dict:
     """Parse camera configuration from form data."""
     camera = {}
 
-    # Basic fields — checkboxes don't send values when unchecked, so always set
+    # Basic fields - checkboxes don't send values when unchecked, so always set
     camera["enabled"] = form.get("enabled") is not None
 
     cam_type = form.get("type")
@@ -334,7 +334,7 @@ def parse_camera_from_form(form) -> dict:
     if track:
         camera["objects"] = {"track": track}
 
-    # Record — always set (checkbox)
+    # Record - always set (checkbox)
     camera["record"] = {"enabled": form.get("record_enabled") is not None}
     if camera["record"]["enabled"]:
         record = camera["record"]
@@ -386,7 +386,7 @@ def parse_camera_from_form(form) -> dict:
                     detections["retain"]["mode"] = det_retain_mode
             record["detections"] = detections
 
-    # Detect — always set (checkbox) + detect config
+    # Detect - always set (checkbox) + detect config
     detect = {"enabled": form.get("detect_enabled") is not None}
     detect_width = form.get("detect_width", "").strip()
     detect_height = form.get("detect_height", "").strip()
@@ -415,7 +415,7 @@ def parse_camera_from_form(form) -> dict:
         detect["stationary"] = stationary
     camera["detect"] = detect
 
-    # Snapshots — enabled checkbox + config
+    # Snapshots - enabled checkbox + config
     snapshots = {"enabled": form.get("snapshots_enabled") is not None}
     if snapshots["enabled"]:
         if form.get("snapshots_clean_copy") is not None:
@@ -446,12 +446,12 @@ def parse_camera_from_form(form) -> dict:
     if best_timeout:
         camera["best_image_timeout"] = int(best_timeout)
 
-    # Live view stream — Frigate uses live.streams dict (label → go2rtc stream name)
+    # Live view stream - Frigate uses live.streams dict (label → go2rtc stream name)
     live_stream = form.get("live_stream_name", "").strip()
     if live_stream:
         camera["live"] = {"streams": {live_stream: live_stream}}
 
-    # Record output preset — camera-level ffmpeg.output_args.record override
+    # Record output preset - camera-level ffmpeg.output_args.record override
     record_preset = form.get("record_output_preset", "").strip()
     if record_preset:
         camera.setdefault("ffmpeg", {}).setdefault("output_args", {})["record"] = record_preset
@@ -643,7 +643,7 @@ def rediscover_streams(name):
             parts.append(f"Serial: {dev['serial']}")
         parts.append("Camera metadata updated (manufacturer, model, firmware, serial)")
     else:
-        parts.append("ONVIF not available — metadata not updated")
+        parts.append("ONVIF not available - metadata not updated")
     parts.append(f"go2rtc streams + ffmpeg inputs replaced for {name}")
 
     # Reload config to get updated streams + ffmpeg inputs for OOB swap

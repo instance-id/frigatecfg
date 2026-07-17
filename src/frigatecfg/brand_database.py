@@ -654,7 +654,7 @@ def detect_brand_from_ports(open_ports: list[int]) -> list[tuple[str, dict[str, 
     Scoring:
     - Identifying port match: +10 (strong signal, e.g. 37777, 10080, 9000)
     - Common port match: +1 (weak signal, e.g. 80, 443)
-    - Minimum score of 2 required — filters out devices with only generic web ports
+    - Minimum score of 2 required - filters out devices with only generic web ports
     """
     brands = _get_merged_brands()
     matches = []
@@ -676,11 +676,11 @@ def get_camera_indicative_ports() -> set[int]:
     """Return ports that strongly indicate a camera device.
 
     Includes RTSP (554) and all brand identifying ports.
-    Used to filter network scan results — devices without any of these
+    Used to filter network scan results - devices without any of these
     are almost certainly not cameras (routers, servers, IoT, etc.).
     """
     brands = _get_merged_brands()
-    ports = {554}  # RTSP — universal camera indicator
+    ports = {554}  # RTSP - universal camera indicator
     for brand in brands.values():
         ports.update(brand.get("identifying_ports", []))
     return ports

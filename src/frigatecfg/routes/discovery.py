@@ -168,7 +168,7 @@ def add_camera_from_discovery():
         return render_template("partials/discovery_add_result.html",
                                error=f"Camera '{name}' already exists")
 
-    # Parse streams from form — prefix with camera name to avoid collisions
+    # Parse streams from form - prefix with camera name to avoid collisions
     raw_streams = {}
     i = 0
     while True:

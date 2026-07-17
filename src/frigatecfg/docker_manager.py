@@ -112,7 +112,7 @@ def test_rtsp_connection(url: str, timeout: float = 10.0) -> dict[str, Any]:
     except Exception as e:
         return {"success": False, "message": f"Error parsing URL: {e}"}
 
-    # Try ffprobe first — actually verifies RTSP handshake + credentials
+    # Try ffprobe first - actually verifies RTSP handshake + credentials
     try:
         result = subprocess.run(
             [
@@ -168,10 +168,10 @@ def test_rtsp_connection(url: str, timeout: float = 10.0) -> dict[str, Any]:
     except subprocess.TimeoutExpired:
         return {"success": False, "message": f"Probe timed out after {timeout}s."}
     except FileNotFoundError:
-        # ffprobe not installed — fall back to TCP connect
+        # ffprobe not installed - fall back to TCP connect
         pass
     except Exception as e:
-        # ffprobe failed unexpectedly — fall back to TCP connect
+        # ffprobe failed unexpectedly - fall back to TCP connect
         pass
 
     # Fallback: TCP connect only (less thorough)
@@ -183,7 +183,7 @@ def test_rtsp_connection(url: str, timeout: float = 10.0) -> dict[str, Any]:
             sock.close()
             return {
                 "success": True,
-                "message": f"TCP connect to {host}:{port} succeeded (ffprobe unavailable — credentials not verified).",
+                "message": f"TCP connect to {host}:{port} succeeded (ffprobe unavailable - credentials not verified).",
                 "warning": True,
             }
         except socket.timeout:

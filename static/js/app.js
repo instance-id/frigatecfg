@@ -1,4 +1,4 @@
-// Frigate Config Manager — client-side JS
+// Frigate Config Manager - client-side JS
 // Works with htmx for dynamic interactions
 
 // --- Stream row management ---

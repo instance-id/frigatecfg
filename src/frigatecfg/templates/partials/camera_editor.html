@@ -510,7 +510,7 @@
         <div class="card">
             <div class="card-header"><h3>Camera Notes &amp; Details</h3></div>
             <div class="card-body">
-                <p class="form-hint">Stored locally in the database only — not part of Frigate config.</p>
+                <p class="form-hint">Stored locally in the database only - not part of Frigate config.</p>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="meta_location">Location</label>
@@ -544,7 +544,7 @@
                     </div>
                     <div class="form-group">
                         <label for="meta_serial_number">Serial Number
-                            {{ tooltip("Hardware serial number from ONVIF. Used for dedup during camera discovery — same camera on different IP/VLAN will be flagged as already added.", "https://docs.frigate.video/configuration/cameras") }}
+                            {{ tooltip("Hardware serial number from ONVIF. Used for dedup during camera discovery - same camera on different IP/VLAN will be flagged as already added.", "https://docs.frigate.video/configuration/cameras") }}
                         </label>
                         <input type="text" name="meta_serial_number" id="meta_serial_number"
                                value="{{ metadata.get('serial_number', '') }}" class="form-input"
