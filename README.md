@@ -9,29 +9,29 @@ I built this for my own use, but I'm sharing it in case it's useful for others.
 <table>
   <tr>
     <td>
-      <a href="./images/dashboard.png"><img src="./images/dashboard.png" width="200" alt="Dashboard"></a>
+      <a href="./images/dashboard.png"><img src="./images/dashboard.png" width="300" alt="Dashboard"></a>
       <p align="center">Dashboard</p>
     </td>
     <td>
-      <a href="./images/camera_discovery.png"><img src="./images/camera_discovery.png" width="200" alt="Camera Discovery"></a>
+      <a href="./images/camera_discovery.png"><img src="./images/camera_discovery.png" width="300" alt="Camera Discovery"></a>
       <p align="center">Camera Discovery</p>
     </td>
     <td>
-      <a href="./images/camera_list.png"><img src="./images/camera_list.png" width="200" alt="Camera List"></a>
+      <a href="./images/camera_list.png"><img src="./images/camera_list.png" width="300" alt="Camera List"></a>
       <p align="center">Camera List</p>
     </td>
   </tr>
   <tr>
     <td>
-      <a href="./images/edit_camera_1.png"><img src="./images/edit_camera_1.png" width="200" alt="Edit Camera (1/3)"></a>
+      <a href="./images/edit_camera_1.png"><img src="./images/edit_camera_1.png" width="300" alt="Edit Camera (1/3)"></a>
       <p align="center">Edit Camera (1/3)</p>
     </td>
     <td>
-      <a href="./images/edit_camera_2.png"><img src="./images/edit_camera_2.png" width="200" alt="Edit Camera (2/3)"></a>
+      <a href="./images/edit_camera_2.png"><img src="./images/edit_camera_2.png" width="300" alt="Edit Camera (2/3)"></a>
       <p align="center">Edit Camera (2/3)</p>
     </td>
     <td>
-      <a href="./images/edit_camera_3.png"><img src="./images/edit_camera_3.png" width="200" alt="Edit Camera (3/3)"></a>
+      <a href="./images/edit_camera_3.png"><img src="./images/edit_camera_3.png" width="300" alt="Edit Camera (3/3)"></a>
       <p align="center">Edit Camera (3/3)</p>
     </td>
   </tr>
