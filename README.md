@@ -74,13 +74,6 @@ I built this for my own use, but I'm sharing it in case it's useful for others.
 - Schema-driven UI - fields, types, defaults, and descriptions defined in `config_schema.py`
 - Dict collections (detectors, objects, zones) with add/remove key-value pairs
 
-### Version History & Undo/Redo
-
-- Every config save creates a versioned snapshot in SQLite
-- **Undo/Redo** - revert or reapply changes at the section level
-- **Version History** - view and restore any past config version
-- Old config state stored per-section for precise undo
-
 ### Docker Integration
 
 - **Restart Frigate** container directly from the UI after making changes
