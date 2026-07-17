@@ -1,0 +1,587 @@
+{% from "macros.html" import tooltip %}
+<div class="camera-editor">
+    <div class="page-header">
+        <h2>Edit Camera: {{ camera_name }}</h2>
+        <div class="page-header-actions">
+            <a href="/cameras/" hx-get="/cameras/" hx-target="#main-content" hx-swap="innerHTML"
+               class="btn btn-small btn-ghost">Back to Cameras</a>
+            <button class="btn btn-small btn-danger"
+                    hx-delete="/cameras/{{ camera_name }}" hx-target="#main-content" hx-swap="innerHTML"
+                    hx-confirm="Delete camera '{{ camera_name }}' and all its streams?">
+                Delete Camera
+            </button>
+        </div>
+    </div>
+
+    <form hx-post="/cameras/{{ camera_name }}" hx-target="#main-content" hx-swap="innerHTML" class="camera-edit-form">
+
+        <div class="card">
+            <div class="card-header"><h3>Basic Settings</h3></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Camera Name</label>
+                        <input type="text" name="name" id="name" value="{{ camera_name }}" class="form-input">
+                        <p class="form-hint">Rename will update go2rtc streams and all references.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Camera Type
+                            {{ tooltip("generic: Standard camera. lpr: License Plate Recognition camera with special Frigate features.", "https://docs.frigate.video/configuration/cameras#camera_type") }}
+                        </label>
+                        <select name="type" id="type" class="form-input">
+                            <option value="generic" {{ "selected" if camera.get("type", "generic") == "generic" }}>Generic</option>
+                            <option value="lpr" {{ "selected" if camera.get("type") == "lpr" }}>LPR</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Enabled
+                            {{ tooltip("Enable/disable camera. If disabled: config is used but no live stream, no capture, no detection. Events/Recordings are still viewable.", "https://docs.frigate.video/configuration/reference#cameras") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="enabled" {{ "checked" if camera.get("enabled", True) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="ui_order">UI Order</label>
+                        <input type="number" name="ui_order" id="ui_order"
+                               value="{{ camera.get("ui", {}).get("order", 0) }}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="webui_url">Camera WebUI URL</label>
+                        <input type="text" name="webui_url" id="webui_url"
+                               value="{{ camera.get("webui_url", "") }}" class="form-input" placeholder="http://camera-ip">
+                    </div>
+                    <div class="form-group">
+                        <label for="best_image_timeout">Best Image Timeout (s)
+                            {{ tooltip("Timeout for highest scoring image before allowing it to be replaced by a newer image.", "https://docs.frigate.video/configuration/reference#cameras") }}
+                        </label>
+                        <input type="number" name="best_image_timeout" id="best_image_timeout"
+                               value="{{ camera.get("best_image_timeout", 60) }}" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="live_stream_name">Live View Stream
+                            {{ tooltip("Set the go2rtc stream used for live view in Frigate WebUI. Default is the camera name. Pick the high-res (record) stream for best quality.", "https://docs.frigate.video/configuration/live") }}
+                        </label>
+                        <select name="live_stream_name" id="live_stream_name" class="form-input">
+                            <option value="">Default (auto)</option>
+                            {% for sname in streams.keys() %}
+                            <option value="{{ sname }}" {{ 'selected' if live_stream_name == sname }}>{{ sname }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="form-hint">Which go2rtc stream to use for Frigate's live UI. Pick the high-res (record) stream for best quality.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="record_output_preset">Record Output Preset
+                            {{ tooltip("Recording output format preset. No Audio: strips audio. Audio Copy: preserves original codec. Audio AAC: transcodes for compatibility.", "https://docs.frigate.video/configuration/ffmpeg_presets#record-presets") }}
+                        </label>
+                        <select name="record_output_preset" id="record_output_preset" class="form-input">
+                            <option value="" {{ 'selected' if not record_output_preset }}>Default (global)</option>
+                            <option value="preset-record-generic" {{ 'selected' if record_output_preset == 'preset-record-generic' }}>No Audio (generic)</option>
+                            <option value="preset-record-generic-audio-copy" {{ 'selected' if record_output_preset == 'preset-record-generic-audio-copy' }}>Audio Copy (original codec)</option>
+                            <option value="preset-record-generic-audio-aac" {{ 'selected' if record_output_preset == 'preset-record-generic-audio-aac' }}>Audio AAC (transcoded)</option>
+                        </select>
+                        <p class="form-hint">Recording output format. Use Audio Copy if camera has audio to preserve original codec. Use AAC if player compatibility issues.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Credentials
+                    {{ tooltip("Assign a stored credential set or enter manual credentials. Used for re-running stream discovery and auto-populating stream URLs.", "") }}
+                </h3></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="credential_id">Credential Set</label>
+                        <select name="credential_id" id="credential_id" class="form-input" onchange="toggleManualCreds(this)">
+                            <option value="">None</option>
+                            <option value="manual" {{ 'selected' if metadata.get('credential_id') is none and metadata.get('manual_username') }}>Manual entry</option>
+                            {% for cred in credentials %}
+                            <option value="{{ cred.id }}"
+                                {{ 'selected' if metadata.get('credential_id') == cred.id }}>
+                                {{ cred.name }} ({{ cred.username }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div id="manual-cred-fields" style="display:none; margin-top: 12px;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="manual_username">Username</label>
+                            <input type="text" name="manual_username" id="manual_username"
+                                   value="{{ metadata.get('manual_username', '') }}" class="form-input"
+                                   placeholder="e.g. admin">
+                        </div>
+                        <div class="form-group">
+                            <label for="manual_password">Password</label>
+                            <input type="password" name="manual_password" id="manual_password"
+                                   value="{{ metadata.get('manual_password', '') }}" class="form-input"
+                                   placeholder="Password">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 12px;">
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            hx-post="/cameras/{{ camera_name }}/apply-credentials"
+                            hx-target="#credential-apply-result"
+                            hx-swap="innerHTML"
+                            hx-include="#credential_id, #manual_username, #manual_password"
+                            hx-confirm="Apply credentials to all go2rtc stream URLs for this camera?">
+                        Apply to Stream URLs
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm"
+                            hx-post="/cameras/{{ camera_name }}/rediscover-streams"
+                            hx-target="#credential-apply-result"
+                            hx-swap="innerHTML"
+                            hx-include="#credential_id, #manual_username, #manual_password"
+                            hx-indicator="#rediscover-loading"
+                            hx-confirm="Run full camera discovery at this camera's IP? This will scan ports, probe ONVIF for device info, verify streams, and replace current go2rtc streams + ffmpeg inputs.">
+                        Discover &amp; Update Camera
+                    </button>
+                    <span id="rediscover-loading" class="htmx-indicator scan-loading">
+                        <span class="spinner"></span> Scanning ports &amp; probing ONVIF…
+                    </span>
+                </div>
+                <div id="credential-apply-result" style="margin-top: 12px;"></div>
+                <p class="form-hint" style="margin-top: 8px;">Manage credential sets in the <a href="/credentials/" hx-get="/credentials/" hx-target="#main-content" hx-swap="innerHTML">Credentials</a> page.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>go2RTC Streams</h3>
+                <button type="button" class="btn btn-small btn-secondary" onclick="addStreamRow()">+ Add Stream</button>
+            </div>
+            <div class="card-body">
+                <p class="form-hint">go2rtc stream entries with FFmpeg input roles. Roles control whether each stream is used for recording or detection.</p>
+                <div id="stream-rows">
+                    {% for sname, surls in streams.items() %}
+                    <div class="stream-row" data-index="{{ loop.index0 }}">
+                        <div class="stream-row-fields">
+                            <input type="text" name="stream_name_{{ loop.index0 }}" value="{{ sname }}"
+                                   class="form-input stream-name-input" placeholder="Stream name">
+                            <input type="text" name="stream_url_{{ loop.index0 }}" value="{{ surls[0] if surls else '' }}"
+                                   class="form-input stream-url-input" placeholder="rtsp://user:pass@ip/path">
+                            <select name="stream_role_{{ loop.index0 }}" class="form-input stream-role-select">
+                                <option value="record" {{ 'selected' if stream_roles.get(sname, 'record' if '_sub' not in sname else 'detect') == 'record' }}>Record</option>
+                                <option value="detect" {{ 'selected' if stream_roles.get(sname, 'record' if '_sub' not in sname else 'detect') == 'detect' }}>Detect</option>
+                            </select>
+                        </div>
+                        <div class="stream-row-actions">
+                            <button type="button" class="btn btn-small btn-ghost" onclick="testStream(this)">Test</button>
+                            <button type="button" class="btn btn-small btn-ghost" onclick="removeStreamRow(this)">&times;</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if not streams %}
+                    <div class="stream-row" data-index="0">
+                        <div class="stream-row-fields">
+                            <input type="text" name="stream_name_0" class="form-input stream-name-input" placeholder="Stream name">
+                            <input type="text" name="stream_url_0" class="form-input stream-url-input" placeholder="rtsp://user:pass@ip/path">
+                            <select name="stream_role_0" class="form-input stream-role-select">
+                                <option value="record">Record</option>
+                                <option value="detect">Detect</option>
+                            </select>
+                        </div>
+                        <div class="stream-row-actions">
+                            <button type="button" class="btn btn-small btn-ghost" onclick="testStream(this)">Test</button>
+                            <button type="button" class="btn btn-small btn-ghost" onclick="removeStreamRow(this)">&times;</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>FFmpeg Inputs</h3></div>
+            <div class="card-body">
+                {% set inputs = camera.get("ffmpeg", {}).get("inputs", []) %}
+                {% if inputs %}
+                <div class="ffmpeg-inputs">
+                    {% for inp in inputs %}
+                    <div class="ffmpeg-input-item">
+                        <div class="info-row">
+                            <span class="info-label">Path:</span>
+                            <code>{{ inp.get("path", "") }}</code>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Roles:</span>
+                            <span>{{ inp.get("roles", [])|join(", ") }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Input Args:</span>
+                            <code>{{ inp.get("input_args", "inherit") }}</code>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="form-hint">FFmpeg inputs are auto-generated from go2rtc streams above. Change the role dropdown on each stream to modify.</p>
+                {% else %}
+                <p class="text-muted">No ffmpeg inputs. Add go2rtc streams above to auto-generate.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Enabled Features</h3></div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Detect Enabled
+                            {{ tooltip("Enable object detection for this camera. Frigate always decodes the detect stream for motion detection, Birdseye, and API endpoints even if disabled.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="detect_enabled"
+                                   {{ "checked" if camera.get("detect", {}).get("enabled", False) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Record Enabled
+                            {{ tooltip("Enable recording for this camera. WARNING: If disabled in config, turning it on via UI/MQTT later will have no effect.", "https://docs.frigate.video/configuration/reference#record") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="record_enabled"
+                                   {{ "checked" if camera.get("record", {}).get("enabled", False) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Snapshots Enabled
+                            {{ tooltip("Enable writing JPG snapshots to /media/frigate/clips for each tracked object.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="snapshots_enabled"
+                                   {{ "checked" if camera.get("snapshots", {}).get("enabled", False) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Object Detection
+                    {{ tooltip("Configure which objects to track and detection parameters. These override global detect settings for this camera.", "https://docs.frigate.video/configuration/reference#detect") }}
+                </h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Objects to Track
+                        {{ tooltip("List of objects to track from labelmap.txt. Only tracked objects will be detected and recorded.", "https://docs.frigate.video/configuration/reference#objects") }}
+                    </label>
+                    <div class="checkbox-group">
+                        {% for obj in ["person", "car", "cat", "dog", "bird", "bicycle", "motorcycle", "truck", "bag", "phone"] %}
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="objects_track" value="{{ obj }}"
+                                   {{ "checked" if obj in camera.get("objects", {}).get("track", ["person"]) }}>
+                            <span>{{ obj }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="detect_width">Detect Width
+                            {{ tooltip("Width of the frame for the input with the detect role. Default: use native stream resolution.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_width" id="detect_width"
+                               value="{{ camera.get('detect', {}).get('width', '') }}" class="form-input" min="1" placeholder="Native">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_height">Detect Height
+                            {{ tooltip("Height of the frame for the input with the detect role. Default: use native stream resolution.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_height" id="detect_height"
+                               value="{{ camera.get('detect', {}).get('height', '') }}" class="form-input" min="1" placeholder="Native">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_fps">Detect FPS
+                            {{ tooltip("Number of frames per second to run detection on. Recommended: 5. Ideally reduce FPS on the camera.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_fps" id="detect_fps"
+                               value="{{ camera.get('detect', {}).get('fps', 5) }}" class="form-input" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_min_initialized">Min Initialized
+                            {{ tooltip("Consecutive detection hits required for an object to be initialized in the tracker. Default: half the frame rate.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_min_initialized" id="detect_min_initialized"
+                               value="{{ camera.get('detect', {}).get('min_initialized', 2) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_max_disappeared">Max Disappeared
+                            {{ tooltip("Frames without a detection before Frigate considers an object gone. Default: 5x the frame rate.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_max_disappeared" id="detect_max_disappeared"
+                               value="{{ camera.get('detect', {}).get('max_disappeared', 25) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_stationary_threshold">Stationary Threshold
+                            {{ tooltip("Frames without position change for an object to be considered stationary. Default: 10x the frame rate.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_stationary_threshold" id="detect_stationary_threshold"
+                               value="{{ camera.get('detect', {}).get('stationary', {}).get('threshold', 50) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="detect_stationary_interval">Stationary Interval
+                            {{ tooltip("Frequency for confirming stationary objects. 1 = every frame, 10 = every 10th frame.", "https://docs.frigate.video/configuration/reference#detect") }}
+                        </label>
+                        <input type="number" name="detect_stationary_interval" id="detect_stationary_interval"
+                               value="{{ camera.get('detect', {}).get('stationary', {}).get('interval', 50) }}" class="form-input" min="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Recording Settings
+                    {{ tooltip("Configure how recordings are retained and what events trigger recording. These override global record settings for this camera.", "https://docs.frigate.video/configuration/reference#record") }}
+                </h3></div>
+            <div class="card-body">
+                <p class="form-hint">Settings below only apply when Record Enabled is checked in Enabled Features above.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="record_retain_days">Continuous Retain (days)
+                            {{ tooltip("Days to retain all continuous recordings regardless of tracked objects or motion. Set to 0 to only retain event-based recordings (recommended).", "https://docs.frigate.video/configuration/record") }}
+                        </label>
+                        <input type="number" name="record_retain_days" id="record_retain_days"
+                               value="{{ camera.get("record", {}).get("retain", {}).get("days", 0) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_retain_mode">Retain Mode
+                            {{ tooltip("all: save all segments. motion: only segments with detected motion. active_objects: only segments with active/moving objects.", "https://docs.frigate.video/configuration/record") }}
+                        </label>
+                        <select name="record_retain_mode" id="record_retain_mode" class="form-input">
+                            <option value="" {{ 'selected' if not camera.get("record", {}).get("retain", {}).get("mode") }}>Default (global)</option>
+                            <option value="all" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'all' }}>All</option>
+                            <option value="motion" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'motion' }}>Motion</option>
+                            <option value="active_objects" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'active_objects' }}>Active Objects</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="record_expire_interval">Expire Interval (min)
+                            {{ tooltip("Minutes between cleanup runs. Higher values reduce disk I/O but delay deletion of expired segments.", "https://docs.frigate.video/configuration/reference#record") }}
+                        </label>
+                        <input type="number" name="record_expire_interval" id="record_expire_interval"
+                               value="{{ camera.get("record", {}).get("expire_interval", 60) }}" class="form-input" min="1">
+                    </div>
+                </div>
+
+                <h4 style="margin: 16px 0 8px; font-size: 13px; color: var(--text-secondary, #999);">Alert Recordings
+                    {{ tooltip("Alert recordings are triggered by reviewed alert events. Configure pre/post capture and retention.", "https://docs.frigate.video/configuration/reference#record") }}
+                </h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="record_alerts_pre">Pre-capture (s)</label>
+                        <input type="number" name="record_alerts_pre" id="record_alerts_pre"
+                               value="{{ camera.get("record", {}).get("alerts", {}).get("pre_capture", 5) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_alerts_post">Post-capture (s)</label>
+                        <input type="number" name="record_alerts_post" id="record_alerts_post"
+                               value="{{ camera.get("record", {}).get("alerts", {}).get("post_capture", 5) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_alerts_retain_days">Retain (days)</label>
+                        <input type="number" name="record_alerts_retain_days" id="record_alerts_retain_days"
+                               value="{{ camera.get("record", {}).get("alerts", {}).get("retain", {}).get("days", 10) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_alerts_retain_mode">Retain Mode</label>
+                        <select name="record_alerts_retain_mode" id="record_alerts_retain_mode" class="form-input">
+                            <option value="" {{ 'selected' if not camera.get("record", {}).get("alerts", {}).get("retain", {}).get("mode") }}>Default (motion)</option>
+                            <option value="all" {{ 'selected' if camera.get("record", {}).get("alerts", {}).get("retain", {}).get("mode") == 'all' }}>All</option>
+                            <option value="motion" {{ 'selected' if camera.get("record", {}).get("alerts", {}).get("retain", {}).get("mode") == 'motion' }}>Motion</option>
+                            <option value="active_objects" {{ 'selected' if camera.get("record", {}).get("alerts", {}).get("retain", {}).get("mode") == 'active_objects' }}>Active Objects</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h4 style="margin: 16px 0 8px; font-size: 13px; color: var(--text-secondary, #999);">Detection Recordings
+                    {{ tooltip("Detection recordings are triggered by object detections. Configure pre/post capture and retention.", "https://docs.frigate.video/configuration/reference#record") }}
+                </h4>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="record_detections_pre">Pre-capture (s)</label>
+                        <input type="number" name="record_detections_pre" id="record_detections_pre"
+                               value="{{ camera.get("record", {}).get("detections", {}).get("pre_capture", 5) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_detections_post">Post-capture (s)</label>
+                        <input type="number" name="record_detections_post" id="record_detections_post"
+                               value="{{ camera.get("record", {}).get("detections", {}).get("post_capture", 5) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_detections_retain_days">Retain (days)</label>
+                        <input type="number" name="record_detections_retain_days" id="record_detections_retain_days"
+                               value="{{ camera.get("record", {}).get("detections", {}).get("retain", {}).get("days", 10) }}" class="form-input" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="record_detections_retain_mode">Retain Mode</label>
+                        <select name="record_detections_retain_mode" id="record_detections_retain_mode" class="form-input">
+                            <option value="" {{ 'selected' if not camera.get("record", {}).get("detections", {}).get("retain", {}).get("mode") }}>Default (motion)</option>
+                            <option value="all" {{ 'selected' if camera.get("record", {}).get("detections", {}).get("retain", {}).get("mode") == 'all' }}>All</option>
+                            <option value="motion" {{ 'selected' if camera.get("record", {}).get("detections", {}).get("retain", {}).get("mode") == 'motion' }}>Motion</option>
+                            <option value="active_objects" {{ 'selected' if camera.get("record", {}).get("detections", {}).get("retain", {}).get("mode") == 'active_objects' }}>Active Objects</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Snapshots
+                    {{ tooltip("JPG snapshots written to /media/frigate/clips for each tracked object. Configure quality, appearance, and retention.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                </h3></div>
+            <div class="card-body">
+                <p class="form-hint">Settings below only apply when Snapshots Enabled is checked in Enabled Features above.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Clean Copy
+                            {{ tooltip("Save a clean copy of the snapshot image without bounding boxes or labels.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="snapshots_clean_copy"
+                                   {{ "checked" if camera.get("snapshots", {}).get("clean_copy", True) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Timestamp
+                            {{ tooltip("Print a timestamp on the snapshots.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="snapshots_timestamp"
+                                   {{ "checked" if camera.get("snapshots", {}).get("timestamp", False) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Bounding Box
+                            {{ tooltip("Draw bounding box on the snapshots.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="snapshots_bounding_box"
+                                   {{ "checked" if camera.get("snapshots", {}).get("bounding_box", True) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>Crop
+                            {{ tooltip("Crop the snapshot to the detected object.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <label class="toggle">
+                            <input type="checkbox" name="snapshots_crop"
+                                   {{ "checked" if camera.get("snapshots", {}).get("crop", False) }}>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="snapshots_height">Height (px)
+                            {{ tooltip("Height to resize the snapshot to. Default: original size.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <input type="number" name="snapshots_height" id="snapshots_height"
+                               value="{{ camera.get('snapshots', {}).get('height', 175) }}" class="form-input" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="snapshots_quality">Quality (0-100)
+                            {{ tooltip("Quality of the encoded JPEG snapshot. Higher = better quality, larger file.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <input type="number" name="snapshots_quality" id="snapshots_quality"
+                               value="{{ camera.get('snapshots', {}).get('quality', 70) }}" class="form-input" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="snapshots_retain_days">Retain (days)
+                            {{ tooltip("Default retention days for snapshots. Can be overridden per object type.", "https://docs.frigate.video/configuration/reference#snapshots") }}
+                        </label>
+                        <input type="number" name="snapshots_retain_days" id="snapshots_retain_days"
+                               value="{{ camera.get('snapshots', {}).get('retain', {}).get('default', 10) }}" class="form-input" min="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3>Camera Notes &amp; Details</h3></div>
+            <div class="card-body">
+                <p class="form-hint">Stored locally in the database only — not part of Frigate config.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="meta_location">Location</label>
+                        <input type="text" name="meta_location" id="meta_location"
+                               value="{{ metadata.get('location', '') }}" class="form-input"
+                               placeholder="e.g. Front porch">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_ip_address">IP Address</label>
+                        <input type="text" name="meta_ip_address" id="meta_ip_address"
+                               value="{{ metadata.get('ip_address', '') }}" class="form-input"
+                               placeholder="e.g. 192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_manufacturer">Manufacturer</label>
+                        <input type="text" name="meta_manufacturer" id="meta_manufacturer"
+                               value="{{ metadata.get('manufacturer', '') }}" class="form-input"
+                               placeholder="e.g. Reolink">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_model">Model</label>
+                        <input type="text" name="meta_model" id="meta_model"
+                               value="{{ metadata.get('model', '') }}" class="form-input"
+                               placeholder="e.g. RLC-820A">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_firmware_version">Firmware Version</label>
+                        <input type="text" name="meta_firmware_version" id="meta_firmware_version"
+                               value="{{ metadata.get('firmware_version', '') }}" class="form-input"
+                               placeholder="e.g. v3.1.0">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_serial_number">Serial Number
+                            {{ tooltip("Hardware serial number from ONVIF. Used for dedup during camera discovery — same camera on different IP/VLAN will be flagged as already added.", "https://docs.frigate.video/configuration/cameras") }}
+                        </label>
+                        <input type="text" name="meta_serial_number" id="meta_serial_number"
+                               value="{{ metadata.get('serial_number', '') }}" class="form-input"
+                               placeholder="e.g. 1234567890ABCD">
+                    </div>
+                    <div class="form-group">
+                        <label for="meta_purchase_date">Purchase Date</label>
+                        <input type="date" name="meta_purchase_date" id="meta_purchase_date"
+                               value="{{ metadata.get('purchase_date', '') }}" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="meta_notes">Notes</label>
+                    <textarea name="meta_notes" id="meta_notes" class="form-input form-textarea"
+                              placeholder="Any personal notes about this camera...">{{ metadata.get('notes', '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Camera</button>
+            <a href="/cameras/" hx-get="/cameras/" hx-target="#main-content" hx-swap="innerHTML"
+               class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleManualCreds(sel) {
+    const manualFields = document.getElementById('manual-cred-fields');
+    manualFields.style.display = (sel.value === 'manual') ? 'block' : 'none';
+}
+// Show manual fields on load if "manual" is selected
+(function() {
+    const sel = document.getElementById('credential_id');
+    if (sel && sel.value === 'manual') {
+        document.getElementById('manual-cred-fields').style.display = 'block';
+    }
+})();
+</script>

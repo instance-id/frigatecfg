@@ -1,0 +1,16 @@
+services:
+  frigatecfg:
+    build: .
+    container_name: frigatecfg
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${FRIGATE_CONFIG_DIR:-../config}:/config
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    environment:
+      - FRIGATE_CONFIG_PATH=/config/config.yml
+      - FRIGATE_CONTAINER_NAME=frigate
+    restart: unless-stopped

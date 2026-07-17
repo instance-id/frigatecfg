@@ -1,0 +1,119 @@
+<div class="custom-brand-form card">
+    <div class="card-header">
+        <h4>{% if brand_key and brand %}Edit Brand: {{ brand.get('name', brand_key) }}{% else %}Add Custom Brand{% endif %}</h4>
+    </div>
+    <div class="card-body">
+        {% if error %}
+        <div class="test-result test-fail">{{ error }}</div>
+        {% endif %}
+
+        <form id="custom-brand-form"
+              hx-post="/discovery/brands/add"
+              hx-target="#custom-brands-container"
+              hx-swap="innerHTML">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Brand Key (unique ID)</label>
+                    <input type="text" name="brand_key" class="form-input"
+                           placeholder="e.g. reolink or my_custom_brand"
+                           value="{{ brand_key or '' }}"
+                           {{ 'readonly' if brand_key and brand else '' }}
+                           required>
+                    <small class="text-muted">Use existing key (e.g. "reolink") to override, or new key for custom brand</small>
+                </div>
+                <div class="form-group">
+                    <label>Brand Name</label>
+                    <input type="text" name="brand_name" class="form-input"
+                           placeholder="e.g. Reolink or My Custom Brand"
+                           value="{{ brand.get('name', '') if brand else '' }}"
+                           required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Common Ports (comma-separated)</label>
+                    <input type="text" name="common_ports" class="form-input"
+                           placeholder="80, 554, 8080"
+                           value="{{ brand.get('common_ports', [])|join(', ') if brand else '' }}">
+                </div>
+                <div class="form-group">
+                    <label>Identifying Ports (comma-separated)</label>
+                    <input type="text" name="identifying_ports" class="form-input"
+                           placeholder="8080"
+                           value="{{ brand.get('identifying_ports', [])|join(', ') if brand else '' }}">
+                    <small class="text-muted">Ports unique to this brand (higher detection score)</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ONVIF Port</label>
+                    <input type="text" name="onvif_port" class="form-input"
+                           placeholder="80"
+                           value="{{ brand.get('onvif_port', '') if brand else '' }}">
+                </div>
+                <div class="form-group">
+                    <label>RTSP Port</label>
+                    <input type="text" name="rtsp_port" class="form-input"
+                           placeholder="554"
+                           value="{{ brand.get('rtsp_port', 554) if brand else '554' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>RTSP Main Stream URL Template</label>
+                    <input type="text" name="rtsp_main" class="form-input"
+                           placeholder="rtsp://{user}:{password}@{ip}:554/stream1"
+                           value="{{ brand.get('rtsp_url_templates', {}).get('main', '') if brand else '' }}">
+                    <small class="text-muted">Use {user}, {password}, {ip} as placeholders</small>
+                </div>
+                <div class="form-group">
+                    <label>RTSP Sub Stream URL Template</label>
+                    <input type="text" name="rtsp_sub" class="form-input"
+                           placeholder="rtsp://{user}:{password}@{ip}:554/stream2"
+                           value="{{ brand.get('rtsp_url_templates', {}).get('sub', '') if brand else '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Default Username</label>
+                    <input type="text" name="default_user" class="form-input"
+                           placeholder="admin"
+                           value="{{ brand.get('default_credentials', {}).get('user', 'admin') if brand else 'admin' }}">
+                </div>
+                <div class="form-group">
+                    <label>Default Password</label>
+                    <input type="text" name="default_pass" class="form-input"
+                           placeholder="password"
+                           value="{{ brand.get('default_credentials', {}).get('pass', '') if brand else '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Notes</label>
+                <input type="text" name="notes" class="form-input"
+                       placeholder="Additional info about this brand"
+                       value="{{ brand.get('notes', '') if brand else '' }}">
+            </div>
+
+            {% if is_override is defined %}
+            <div class="form-group">
+                <label class="toggle">
+                    <input type="checkbox" name="is_override" {{ 'checked' if is_override else '' }}>
+                    <span class="toggle-slider"></span>
+                    Override existing built-in brand (merge ports/settings)
+                </label>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Brand</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('brand-form-area').innerHTML=''>Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

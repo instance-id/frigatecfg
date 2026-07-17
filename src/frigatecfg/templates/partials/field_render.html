@@ -1,0 +1,176 @@
+{% set field_key = section.name ~ "_" ~ field.name if section is defined else field.name %}
+{% set current_val = current_value.get(field.name, field.default) if current_value is defined else field.default %}
+
+<label for="{{ field_key }}">{{ field.label }}</label>
+
+{% if field.description %}
+<p class="form-hint">{{ field.description }}</p>
+{% endif %}
+
+{% if field.type.value == "boolean" %}
+<label class="toggle">
+    <input type="checkbox" name="{{ field_key }}" id="{{ field_key }}"
+           {{ "checked" if current_val }}>
+    <span class="toggle-slider"></span>
+</label>
+
+{% elif field.type.value == "integer" %}
+<input type="number" name="{{ field_key }}" id="{{ field_key }}"
+       value="{{ current_val if current_val is not none else '' }}"
+       class="form-input"
+       {{ "required" if field.required }}>
+
+{% elif field.type.value == "float" %}
+<input type="number" step="0.01" name="{{ field_key }}" id="{{ field_key }}"
+       value="{{ current_val if current_val is not none else '' }}"
+       class="form-input"
+       {{ "required" if field.required }}>
+
+{% elif field.type.value == "enum" %}
+<select name="{{ field_key }}" id="{{ field_key }}" class="form-input" {{ "required" if field.required }}>
+    {% for opt in field.options %}
+    <option value="{{ opt }}" {{ "selected" if current_val == opt }}>{{ opt }}</option>
+    {% endfor %}
+</select>
+
+{% elif field.type.value == "password" %}
+<input type="password" name="{{ field_key }}" id="{{ field_key }}"
+       value="{{ current_val if current_val is not none else '' }}"
+       class="form-input"
+       placeholder="{{ field.placeholder or '••••••' }}"
+       {{ "required" if field.required }}>
+
+{% elif field.type.value == "path" %}
+<input type="text" name="{{ field_key }}" id="{{ field_key }}"
+       value="{{ current_val if current_val is not none else '' }}"
+       class="form-input"
+       placeholder="/path/to/file"
+       {{ "required" if field.required }}>
+
+{% elif field.type.value == "text" %}
+<textarea name="{{ field_key }}" id="{{ field_key }}" class="form-input form-textarea"
+          {{ "required" if field.required }}>{{ current_val if current_val is not none else '' }}</textarea>
+
+{% elif field.type.value == "list" %}
+{% if field.options_source == "cameras" and camera_names is defined %}
+<div class="camera-select-list" id="list-{{ field_key }}">
+    {% for cam_name in camera_names %}
+    <label class="checkbox-row">
+        <input type="checkbox" name="{{ field_key }}[]" value="{{ cam_name }}"
+               {{ "checked" if current_val and cam_name in current_val }}>
+        <span>{{ cam_name }}</span>
+    </label>
+    {% endfor %}
+    {% if current_val and current_val is iterable %}
+        {% for item in current_val %}
+        {% if item not in camera_names %}
+        <label class="checkbox-row">
+            <input type="checkbox" name="{{ field_key }}[]" value="{{ item }}" checked>
+            <span>{{ item }} <em>(not found in config)</em></span>
+        </label>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
+{% else %}
+<div class="list-editor" id="list-{{ field_key }}">
+    {% if current_val and current_val is iterable %}
+        {% for item in current_val %}
+        <div class="list-item">
+            <input type="text" name="{{ field_key }}[]" value="{{ item }}" class="form-input">
+            <button type="button" class="btn btn-small btn-ghost" onclick="removeListItem(this)">&times;</button>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+<button type="button" class="btn btn-small btn-secondary" onclick="addListItem('{{ field_key }}')">+ Add</button>
+{% endif %}
+
+{% elif field.type.value == "section" %}
+<div class="sub-section">
+    {% for sub_field in field.fields %}
+    <div class="form-group">
+        {% set sub_key = field_key ~ "_" ~ sub_field.name %}
+        {% set sub_val = current_val.get(sub_field.name, sub_field.default) if current_val else sub_field.default %}
+        <label for="{{ sub_key }}">{{ sub_field.label }}</label>
+        {% if sub_field.description %}<p class="form-hint">{{ sub_field.description }}</p>{% endif %}
+
+        {% if sub_field.type.value == "boolean" %}
+        <label class="toggle">
+            <input type="checkbox" name="{{ sub_key }}" id="{{ sub_key }}" {{ "checked" if sub_val }}>
+            <span class="toggle-slider"></span>
+        </label>
+        {% elif sub_field.type.value == "integer" %}
+        <input type="number" name="{{ sub_key }}" id="{{ sub_key }}" value="{{ sub_val if sub_val is not none else '' }}" class="form-input">
+        {% elif sub_field.type.value == "float" %}
+        <input type="number" step="0.01" name="{{ sub_key }}" id="{{ sub_key }}" value="{{ sub_val if sub_val is not none else '' }}" class="form-input">
+        {% elif sub_field.type.value == "enum" %}
+        <select name="{{ sub_key }}" id="{{ sub_key }}" class="form-input">
+            {% for opt in sub_field.options %}
+            <option value="{{ opt }}" {{ "selected" if sub_val == opt }}>{{ opt }}</option>
+            {% endfor %}
+        </select>
+        {% elif sub_field.type.value == "text" %}
+        <textarea name="{{ sub_key }}" id="{{ sub_key }}" class="form-input form-textarea">{{ sub_val if sub_val is not none else '' }}</textarea>
+        {% elif sub_field.type.value == "list" %}
+        <div class="list-editor">
+            {% if sub_val and sub_val is iterable %}
+                {% for item in sub_val %}
+                <div class="list-item">
+                    <input type="text" name="{{ sub_key }}[]" value="{{ item }}" class="form-input">
+                    <button type="button" class="btn btn-small btn-ghost" onclick="removeListItem(this)">&times;</button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <button type="button" class="btn btn-small btn-secondary" onclick="addListItem('{{ sub_key }}')">+ Add</button>
+        {% else %}
+        <input type="text" name="{{ sub_key }}" id="{{ sub_key }}" value="{{ sub_val if sub_val is not none else '' }}" class="form-input">
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% elif field.type.value == "dict" %}
+<div class="dict-editor" id="dict-{{ field_key }}">
+    {% if current_val and current_val is iterable %}
+        {% for dkey, dval in current_val.items() %}
+        <div class="dict-item">
+            <div class="dict-item-header">
+                <input type="text" name="{{ field_key }}_key_{{ loop.index0 }}" value="{{ dkey }}"
+                       class="form-input dict-key-input" placeholder="{{ field.dict_key_label or 'Key' }}">
+                <button type="button" class="btn btn-small btn-ghost" onclick="removeDictItem(this)">&times;</button>
+            </div>
+            {% if field.fields %}
+            <div class="dict-item-body">
+                {% for dfield in field.fields %}
+                <div class="form-group">
+                    <label>{{ dfield.label }}</label>
+                    <input type="text" name="{{ field_key }}_{{ loop.index0 }}_{{ dfield.name }}"
+                           value="{{ dval.get(dfield.name, '') if dval is mapping else dval }}"
+                           class="form-input">
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <input type="text" name="{{ field_key }}_{{ loop.index0 }}_value"
+                   value="{{ dval|join(', ') if dval is iterable and dval is not string else (dval if dval is string else '') }}"
+                   class="form-input" placeholder="Value">
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+<button type="button" class="btn btn-small btn-secondary"
+        onclick="addDictEntry('{{ field_key }}', '{{ field.dict_key_label or 'Key' }}')">
+    + Add
+</button>
+
+{% else %}
+<input type="text" name="{{ field_key }}" id="{{ field_key }}"
+       value="{{ current_val if current_val is not none else '' }}"
+       class="form-input"
+       {{ "required" if field.required }}
+       {{ "placeholder=\"" ~ field.placeholder ~ "\"" if field.placeholder }}>
+
+{% endif %}

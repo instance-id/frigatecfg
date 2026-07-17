@@ -1,0 +1,52 @@
+mqtt:
+  enabled: true
+  host: 192.168.100.15
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
+  user: mqtt
+  password: 'mqtt'
+  stats_interval: 60
+  qos: 0
+cameras:
+  front_door:
+    enabled: true
+    type: generic
+    ui:
+      order: 0
+  back_yard:
+    enabled: true
+    type: generic
+    ui:
+      order: 0
+    objects:
+      track:
+      - person
+    detect:
+      enabled: true
+    best_image_timeout: 60
+  livingroom:
+    enabled: true
+    type: generic
+    ui:
+      order: 0
+    objects:
+      track:
+      - person
+    detect:
+      enabled: true
+    best_image_timeout: 60
+go2rtc:
+  streams:
+    front_door_main:
+    - rtsp://test@10.0.0.1/main
+    front_door_sub:
+    - rtsp://test@10.0.0.1/sub
+    back_yard:
+    - rtsp://test@10.0.0.2/main
+    back_yard_sub:
+    - rtsp://test@10.0.0.2/sub
+    livingroom:
+    - rtsp://camerauser:camerapass@10.20.20.106/h264Preview_01_main
+    livingroom_sub:
+    - rtsp://camerauser:camerapass@10.20.20.106/h264Preview_01_sub

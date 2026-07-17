@@ -1,0 +1,36 @@
+<div id="stream-rows" hx-swap-oob="true">
+    {% for sname, surls in streams.items() %}
+    <div class="stream-row" data-index="{{ loop.index0 }}">
+        <div class="stream-row-fields">
+            <input type="text" name="stream_name_{{ loop.index0 }}" value="{{ sname }}"
+                   class="form-input stream-name-input" placeholder="Stream name">
+            <input type="text" name="stream_url_{{ loop.index0 }}" value="{{ surls[0] if surls else '' }}"
+                   class="form-input stream-url-input" placeholder="rtsp://user:pass@ip/path">
+            <select name="stream_role_{{ loop.index0 }}" class="form-input stream-role-select">
+                <option value="record" {{ 'selected' if stream_roles.get(sname, 'record' if '_sub' not in sname else 'detect') == 'record' }}>Record</option>
+                <option value="detect" {{ 'selected' if stream_roles.get(sname, 'record' if '_sub' not in sname else 'detect') == 'detect' }}>Detect</option>
+            </select>
+        </div>
+        <div class="stream-row-actions">
+            <button type="button" class="btn btn-small btn-ghost" onclick="testStream(this)">Test</button>
+            <button type="button" class="btn btn-small btn-ghost" onclick="removeStreamRow(this)">&times;</button>
+        </div>
+    </div>
+    {% endfor %}
+    {% if not streams %}
+    <div class="stream-row" data-index="0">
+        <div class="stream-row-fields">
+            <input type="text" name="stream_name_0" class="form-input stream-name-input" placeholder="Stream name">
+            <input type="text" name="stream_url_0" class="form-input stream-url-input" placeholder="rtsp://user:pass@ip/path">
+            <select name="stream_role_0" class="form-input stream-role-select">
+                <option value="record">Record</option>
+                <option value="detect">Detect</option>
+            </select>
+        </div>
+        <div class="stream-row-actions">
+            <button type="button" class="btn btn-small btn-ghost" onclick="testStream(this)">Test</button>
+            <button type="button" class="btn btn-small btn-ghost" onclick="removeStreamRow(this)">&times;</button>
+        </div>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,231 @@
+{% if error %}
+<div class="test-result test-fail">{{ error }}</div>
+{% else %}
+<div class="discovery-detail">
+    <div class="card">
+        <div class="card-header">
+            <h3>Discovery Results: {{ result.ip }}</h3>
+        </div>
+        <div class="card-body">
+
+            <!-- Open Ports -->
+            {% if result.open_ports %}
+            <div class="discovery-section">
+                <h4>Open Ports</h4>
+                <div class="port-list">
+                    {% for port in result.open_ports %}
+                    <span class="port-badge port-large">{{ port }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Detected Brands -->
+            {% if result.detected_brands %}
+            <div class="discovery-section">
+                <h4>Possible Brands</h4>
+                <div class="brand-list">
+                    {% for brand in result.detected_brands %}
+                    <div class="brand-match {{ 'brand-best' if loop.first else '' }}">
+                        <span class="brand-name">{{ brand.name }}</span>
+                        <span class="brand-score">match: {{ brand.score }}</span>
+                        {% if brand.notes %}<div class="brand-notes">{{ brand.notes }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ONVIF Device Info -->
+            {% if result.onvif %}
+            <div class="discovery-section">
+                <h4>ONVIF Device Info {% if result.onvif.port %}(port {{ result.onvif.port }}){% endif %}</h4>
+                {% if result.onvif.success %}
+                <div class="onvif-info">
+                    {% if result.onvif.device_info %}
+                    <div class="onvif-device-info">
+                        <div><strong>Manufacturer:</strong> {{ result.onvif.device_info.manufacturer }}</div>
+                        <div><strong>Model:</strong> {{ result.onvif.device_info.model }}</div>
+                        <div><strong>Firmware:</strong> {{ result.onvif.device_info.firmware }}</div>
+                        <div><strong>Serial:</strong> {{ result.onvif.device_info.serial }}</div>
+                    </div>
+                    {% endif %}
+                    {% if result.onvif.capabilities %}
+                    <div class="onvif-capabilities">
+                        <strong>Capabilities:</strong>
+                        {% if result.onvif.capabilities.ptz %}<span class="cap-badge cap-yes">PTZ</span>{% endif %}
+                        {% if result.onvif.capabilities.audio %}<span class="cap-badge cap-yes">Audio</span>{% endif %}
+                        {% if result.onvif.capabilities.analytics %}<span class="cap-badge cap-yes">Analytics</span>{% endif %}
+                        {% if not result.onvif.capabilities.ptz %}<span class="cap-badge cap-no">No PTZ</span>{% endif %}
+                        {% if not result.onvif.capabilities.audio %}<span class="cap-badge cap-no">No Audio</span>{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- ONVIF Discovered Streams -->
+                {% if result.onvif.streams %}
+                <div class="onvif-streams">
+                    <h5>ONVIF Stream Profiles</h5>
+                    {% for stream in result.onvif.streams %}
+                    <div class="onvif-stream-item">
+                        <div class="onvif-stream-info">
+                            <strong>{{ stream.name }}</strong>
+                            {% if stream.resolution %}<span class="stream-res">{{ stream.resolution }}</span>{% endif %}
+                            {% if stream.bitrate %}<span class="stream-bitrate">{{ stream.bitrate }}</span>{% endif %}
+                            {% if stream.fps %}<span class="stream-fps">{{ stream.fps }}</span>{% endif %}
+                        </div>
+                        {% if stream.uri %}
+                        <div class="onvif-stream-uri">
+                            <code>{{ stream.uri }}</code>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="test-result test-fail">ONVIF: {{ result.onvif.error }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Suggested + Verified Streams -->
+            {% if result.verified_streams %}
+            <div class="discovery-section">
+                <h4>Stream Verification</h4>
+                <div class="stream-verify-list">
+                    {% for vs in result.verified_streams %}
+                    <div class="stream-verify-item">
+                        <div class="stream-verify-header">
+                            <span class="stream-verify-type">{{ vs.stream_type }}</span>
+                            <span class="stream-verify-source">({{ vs.source }})</span>
+                            {% if vs.verified %}
+                                {% if vs.warning %}
+                                <span class="cap-badge cap-warn">TCP only</span>
+                                {% else %}
+                                <span class="cap-badge cap-yes">Verified</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="cap-badge cap-no">Failed</span>
+                            {% endif %}
+                            {% if vs.resolution %}<span class="stream-res">{{ vs.resolution }}</span>{% endif %}
+                        </div>
+                        <div class="stream-verify-url"><code>{{ vs.url }}</code></div>
+                        <div class="stream-verify-msg {{ 'text-success' if vs.verified else 'text-danger' }}">{{ vs.message }}</div>
+                        <div class="stream-verify-actions">
+                            <button class="btn btn-small btn-ghost"
+                                    hx-post="/discovery/test-stream"
+                                    hx-target="this"
+                                    hx-swap="outerHTML"
+                                    hx-vals='{"url": "{{ vs.url }}", "stream_name": "{{ vs.stream_type }}"}'>
+                                Re-test
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Add to Frigate -->
+            {% if result.verified_streams %}
+            <div class="discovery-section">
+                <h4>Add to Frigate</h4>
+                <div class="discovery-add-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Camera Name</label>
+                            <input type="text" id="add_camera_name" class="form-input"
+                                   placeholder="front_door"
+                                   value="{{ result.onvif.device_info.model.lower().replace(' ', '_') if result.onvif and result.onvif.success and result.onvif.device_info.model != 'Unknown' else '' }}">
+                        </div>
+                    </div>
+                    <div class="discovery-add-streams">
+                        {% for vs in result.verified_streams %}
+                        {% if vs.verified %}
+                        <div class="discovery-add-stream">
+                            <label class="toggle">
+                                <input type="checkbox" name="add_stream_{{ loop.index }}" checked
+                                       value="{{ vs.url }}" data-stream-type="{{ vs.stream_type }}">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span>{{ vs.stream_type }}: <code>{{ vs.url }}</code></span>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <button class="btn btn-primary" onclick="addDiscoveredCamera('{{ result.ip }}')">
+                        Add Camera to Frigate
+                    </button>
+                    <div id="add-camera-result" style="margin-top: 12px;"></div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+const onvifDeviceInfo = {
+    {% if result.onvif and result.onvif.success and result.onvif.device_info %}
+    manufacturer: {{ result.onvif.device_info.manufacturer | tojson }},
+    model: {{ result.onvif.device_info.model | tojson }},
+    firmware: {{ result.onvif.device_info.firmware | tojson }},
+    serial: {{ result.onvif.device_info.serial | tojson }}
+    {% else %}
+    manufacturer: "", model: "", firmware: "", serial: ""
+    {% endif %}
+};
+
+function addDiscoveredCamera(ip) {
+    const nameInput = document.getElementById('add_camera_name');
+    const cameraName = nameInput ? nameInput.value.trim() : '';
+    if (!cameraName) {
+        alert('Please enter a camera name');
+        return;
+    }
+
+    const streams = {};
+    document.querySelectorAll('.discovery-add-stream input[type="checkbox"]:checked').forEach(cb => {
+        const streamType = cb.dataset.streamType || 'stream';
+        streams[streamType] = [cb.value];
+    });
+
+    if (Object.keys(streams).length === 0) {
+        alert('Select at least one stream');
+        return;
+    }
+
+    const formData = new URLSearchParams();
+    formData.append('name', cameraName);
+    let i = 0;
+    for (const [streamName, urls] of Object.entries(streams)) {
+        formData.append(`stream_name_${i}`, streamName);
+        formData.append(`stream_url_${i}`, urls[0]);
+        i++;
+    }
+
+    // Pass ONVIF device info for metadata
+    if (onvifDeviceInfo.serial) {
+        formData.append('manufacturer', onvifDeviceInfo.manufacturer);
+        formData.append('model', onvifDeviceInfo.model);
+        formData.append('firmware_version', onvifDeviceInfo.firmware);
+        formData.append('serial_number', onvifDeviceInfo.serial);
+    }
+
+    // Pass credential_id if a stored credential was selected during discovery
+    {% if credential_id %}
+    formData.append('credential_id', '{{ credential_id }}');
+    {% endif %}
+
+    fetch('/discovery/add-camera', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formData.toString()
+    }).then(r => r.text()).then(html => {
+        document.getElementById('add-camera-result').innerHTML = html;
+    });
+}
+</script>
+{% endif %}

@@ -1,0 +1,17 @@
+<div class="alert {{ 'alert-success' if result.success else 'alert-error' }}" id="action-feedback">
+    {{ result.message }}
+</div>
+{% if action == "undo" or action == "redo" %}
+<script>
+    {% if can_undo is defined and not can_undo %}
+    document.querySelector('button[hx-post="/actions/undo"]').disabled = true;
+    {% elif can_undo is defined and can_undo %}
+    document.querySelector('button[hx-post="/actions/undo"]').disabled = false;
+    {% endif %}
+    {% if can_redo is defined and not can_redo %}
+    document.querySelector('button[hx-post="/actions/redo"]').disabled = true;
+    {% elif can_redo is defined and can_redo %}
+    document.querySelector('button[hx-post="/actions/redo"]').disabled = false;
+    {% endif %}
+</script>
+{% endif %}

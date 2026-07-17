@@ -1,0 +1,10 @@
+{# Reusable info tooltip with optional documentation link #}
+{% macro tooltip(text, doc_url=None, doc_text="View documentation") %}
+<span class="info-tooltip">
+    <span class="info-icon">?</span>
+    <span class="tooltip-popup">
+        {{ text }}
+        {% if doc_url %}<a href="{{ doc_url }}" target="_blank" rel="noopener">{{ doc_text }}</a>{% endif %}
+    </span>
+</span>
+{% endmacro %}

@@ -1,0 +1,42 @@
+<div class="versions-view">
+    <div class="page-header">
+        <h2>Version History</h2>
+    </div>
+
+    {% if versions %}
+    <div class="version-list-full">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Current</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in versions %}
+                <tr class="{{ "row-current" if v.is_current }}">
+                    <td>v{{ v.version }}</td>
+                    <td>{{ v.description or "No description" }}</td>
+                    <td>{{ v.created_at[:19] }}</td>
+                    <td>{{ "&#10003;" if v.is_current else "" }}</td>
+                    <td>
+                        {% if not v.is_current %}
+                        <button class="btn btn-small btn-secondary"
+                                hx-post="/actions/restore/{{ v.version }}" hx-target="#action-result" hx-swap="innerHTML"
+                                hx-confirm="Restore config to version {{ v.version }}?">
+                            Restore
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No saved versions yet. Changes will be versioned automatically as you save.</p>
+    {% endif %}
+</div>

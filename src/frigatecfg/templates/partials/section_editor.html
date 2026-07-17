@@ -1,0 +1,63 @@
+{% if saved %}
+<div class="alert alert-success">Settings saved successfully.</div>
+{% endif %}
+
+<div class="section-editor">
+    <div class="page-header">
+        <h2>{{ section.label }}</h2>
+    </div>
+
+    {% if section.description %}
+    <p class="page-description">{{ section.description }}</p>
+    {% endif %}
+
+    {% if section.camera_overridable %}
+    <div class="alert alert-info">This section can be overridden at the camera level.</div>
+    {% endif %}
+
+    <form hx-post="/settings/{{ section.name }}" hx-target="#main-content" hx-swap="innerHTML"
+          class="section-edit-form">
+
+        {% if section.is_dict_collection %}
+        <div class="dict-collection" id="dict-collection-{{ section.name }}">
+            {% if current_value %}
+                {% for key, val in current_value.items() %}
+                <div class="dict-item" data-index="{{ loop.index0 }}">
+                    <div class="dict-item-header">
+                        <input type="text" name="{{ section.name }}_key_{{ loop.index0 }}" value="{{ key }}"
+                               class="form-input dict-key-input" placeholder="{{ section.dict_key_label or 'Name' }}">
+                        <button type="button" class="btn btn-small btn-ghost" onclick="removeDictItem(this)">&times;</button>
+                    </div>
+                    <div class="dict-item-body">
+                        {% for field in section.item_fields %}
+                        <div class="form-group">
+                            {% with current_value=val %}
+                            {% include "partials/field_render.html" with context %}
+                            {% endwith %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <button type="button" class="btn btn-small btn-secondary"
+                onclick="addDictItem('{{ section.name }}', {{ section.item_fields|fields_tojson }}, '{{ section.dict_key_label }}', {{ camera_names|tojson if camera_names is defined else '[]' }})">
+            + Add Entry
+        </button>
+
+        {% else %}
+
+        {% for field in section.fields %}
+        <div class="form-group">
+            {% include "partials/field_render.html" with context %}
+        </div>
+        {% endfor %}
+
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save {{ section.label }}</button>
+        </div>
+    </form>
+</div>

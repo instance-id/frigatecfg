@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frigate Config Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo">Frigate<span>CFG</span></h1>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/dashboard" hx-get="/dashboard" hx-target="#main-content" hx-swap="innerHTML"
+                   class="nav-item" hx-push-url="false">
+                    <span class="nav-icon">&#9632;</span> Dashboard
+                </a>
+
+                <a href="/cameras/" hx-get="/cameras/" hx-target="#main-content" hx-swap="innerHTML"
+                   class="nav-item">
+                    <span class="nav-icon">&#9673;</span> Cameras
+                </a>
+
+                <a href="/discovery/" hx-get="/discovery/" hx-target="#main-content" hx-swap="innerHTML"
+                   class="nav-item">
+                    <span class="nav-icon">&#8981;</span> Discovery
+                </a>
+
+                <a href="/credentials/" hx-get="/credentials/" hx-target="#main-content" hx-swap="innerHTML"
+                   class="nav-item">
+                    <span class="nav-icon">&#128274;</span> Credentials
+                </a>
+
+                {% for group_name, section_names in section_groups.items() %}
+                <div class="nav-group">
+                    <div class="nav-group-title">{{ group_name }}</div>
+                    {% for sname in section_names %}
+                        {% if sname == "cameras" %}
+                            <!-- cameras handled separately above -->
+                        {% else %}
+                            <a href="/settings/{{ sname }}"
+                               hx-get="/settings/{{ sname }}"
+                               hx-target="#main-content"
+                               hx-swap="innerHTML"
+                               class="nav-item nav-sub">
+                                {{ section_map[sname].label if sname in section_map else sname }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="nav-group">
+                    <div class="nav-group-title">History</div>
+                    <a href="/versions" hx-get="/versions" hx-target="#main-content" hx-swap="innerHTML"
+                       class="nav-item nav-sub">Version History</a>
+                    <a href="/actions/export" class="nav-item nav-sub">Export Config</a>
+                </div>
+            </nav>
+        </aside>
+
+        <div class="main-area">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="btn btn-icon" id="sidebar-toggle">&#9776;</button>
+                    <span class="topbar-title">Frigate Configuration Manager</span>
+                </div>
+                <div class="topbar-right">
+                    <div id="frigate-status" class="status-indicator"
+                         hx-get="/actions/status" hx-trigger="load, every 30s" hx-swap="innerHTML">
+                    </div>
+                    <button class="btn btn-secondary"
+                            hx-post="/actions/undo" hx-target="#action-result" hx-swap="innerHTML"
+                            {{ "disabled" if not can_undo }}>
+                        &#8630; Undo
+                    </button>
+                    <button class="btn btn-secondary"
+                            hx-post="/actions/redo" hx-target="#action-result" hx-swap="innerHTML"
+                            {{ "disabled" if not can_redo }}>
+                        &#8631; Redo
+                    </button>
+                    <button class="btn btn-danger"
+                            hx-post="/actions/restart" hx-target="#action-result" hx-swap="innerHTML"
+                            hx-confirm="Restart the Frigate container?">
+                        &#9881; Restart Frigate
+                    </button>
+                </div>
+            </header>
+
+            <main id="main-content" class="main-content">
+                {% block content %}{% endblock %}
+            </main>
+
+            <div id="action-result"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

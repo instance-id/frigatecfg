@@ -1,0 +1,106 @@
+{% if error %}
+<div class="test-result test-fail">{{ error }}</div>
+{% else %}
+<div class="discovery-scan-results">
+    <div class="discovery-scan-note">
+        <strong>Note:</strong> Discovery assumes cameras are already configured for network streaming
+        (RTSP/ONVIF enabled in camera settings). It does not find brand-new, unconfigured cameras.
+    </div>
+
+    {% if not likely and not possible %}
+    <div class="test-result test-warning">No devices with camera ports found on {{ base_ip }}/24</div>
+    {% else %}
+    <h4>Found {{ total }} device(s) on {{ base_ip }}/24</h4>
+
+    {% if likely %}
+    <div class="discovery-section">
+        <h5 class="discovery-section-title likely">Likely Cameras ({{ likely|length }})</h5>
+        <small class="text-muted">Has RTSP port 554 + brand-identifying port(s)</small>
+        <div class="discovery-device-list">
+            {% for device in likely %}
+            <div class="discovery-device-card likely {{ 'already-added' if device.already_added }}">
+                <div class="discovery-device-header">
+                    <span class="discovery-device-ip">{{ device.ip }}</span>
+                    {% if device.already_added %}<span class="cap-badge cap-warn">Already Added</span>{% endif %}
+                    <span class="discovery-device-ports">
+                        {% for port in device.open_ports %}<span class="port-badge">{{ port }}</span>{% endfor %}
+                    </span>
+                </div>
+                {% if device.possible_brands %}
+                <div class="discovery-device-brands">
+                    {% for key, name, score in device.possible_brands %}
+                    <span class="brand-badge brand-{{ 'best' if score >= 10 else 'low' }}">{{ name }} ({{ score }})</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="discovery-creds-row">
+                    <input type="text" id="user-{{ device.ip|replace('.', '-') }}" class="form-input discovery-cred-input" placeholder="admin" value="admin">
+                    <input type="password" id="pass-{{ device.ip|replace('.', '-') }}" class="form-input discovery-cred-input" placeholder="password">
+                    <button class="btn btn-small btn-primary"
+                            id="discover-{{ device.ip }}"
+                            hx-post="/discovery/discover"
+                            hx-target="#discover-inline-{{ device.ip|replace('.', '-') }}"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="this"
+                            hx-indicator="#discover-loading-{{ device.ip|replace('.', '-') }}"
+                            onclick="setDiscoverFromScan(this, '{{ device.ip }}')">
+                        Discover Details
+                    </button>
+                    <span id="discover-loading-{{ device.ip|replace('.', '-') }}" class="htmx-indicator scan-loading">
+                        <span class="spinner"></span> Probing camera…
+                    </span>
+                </div>
+                <div id="discover-inline-{{ device.ip|replace('.', '-') }}" style="margin-top: 12px;"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if possible %}
+    <div class="discovery-section">
+        <h5 class="discovery-section-title possible">Possible Cameras ({{ possible|length }})</h5>
+        <small class="text-muted">Has camera-indicative port(s) but missing RTSP or brand-identifying port</small>
+        <div class="discovery-device-list">
+            {% for device in possible %}
+            <div class="discovery-device-card possible {{ 'already-added' if device.already_added }}">
+                <div class="discovery-device-header">
+                    <span class="discovery-device-ip">{{ device.ip }}</span>
+                    {% if device.already_added %}<span class="cap-badge cap-warn">Already Added</span>{% endif %}
+                    <span class="discovery-device-ports">
+                        {% for port in device.open_ports %}<span class="port-badge">{{ port }}</span>{% endfor %}
+                    </span>
+                </div>
+                {% if device.possible_brands %}
+                <div class="discovery-device-brands">
+                    {% for key, name, score in device.possible_brands %}
+                    <span class="brand-badge brand-{{ 'best' if score >= 10 else 'low' }}">{{ name }} ({{ score }})</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="discovery-creds-row">
+                    <input type="text" id="user-{{ device.ip|replace('.', '-') }}" class="form-input discovery-cred-input" placeholder="admin" value="admin">
+                    <input type="password" id="pass-{{ device.ip|replace('.', '-') }}" class="form-input discovery-cred-input" placeholder="password">
+                    <button class="btn btn-small btn-secondary"
+                            id="discover-{{ device.ip }}"
+                            hx-post="/discovery/discover"
+                            hx-target="#discover-inline-{{ device.ip|replace('.', '-') }}"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="this"
+                            hx-indicator="#discover-loading-{{ device.ip|replace('.', '-') }}"
+                            onclick="setDiscoverFromScan(this, '{{ device.ip }}')">
+                        Discover Details
+                    </button>
+                    <span id="discover-loading-{{ device.ip|replace('.', '-') }}" class="htmx-indicator scan-loading">
+                        <span class="spinner"></span> Probing camera…
+                    </span>
+                </div>
+                <div id="discover-inline-{{ device.ip|replace('.', '-') }}" style="margin-top: 12px;"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endif %}

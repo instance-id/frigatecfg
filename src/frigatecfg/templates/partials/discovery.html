@@ -1,0 +1,233 @@
+<div class="discovery-page">
+    <div class="card">
+        <div class="card-header">
+            <h3>Camera Discovery</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted" style="margin-bottom: 16px;">
+                Scan your network for cameras, detect brand/model via ONVIF, and discover RTSP stream URLs.
+            </p>
+
+            <div class="discovery-tabs">
+                <button class="btn btn-primary" onclick="showDiscoveryTab('network-scan')">Network Scan</button>
+                <button class="btn btn-secondary" onclick="showDiscoveryTab('single-camera')">Single Camera</button>
+                <button class="btn btn-secondary" onclick="showDiscoveryTab('brand-lookup')">Brand Lookup</button>
+                <button class="btn btn-secondary" onclick="showDiscoveryTab('custom-brands')">Custom Brands</button>
+            </div>
+
+            <!-- Network Scan Tab -->
+            <div id="tab-network-scan" class="discovery-tab active">
+                <div class="form-group">
+                    <label>Network Address or Range</label>
+                    <div class="discovery-scan-row">
+                        <input type="text" name="base_ip" id="scan_base_ip" class="form-input"
+                               placeholder="192.168.100.0 or 192.168.100.100-200" value="">
+                        <button class="btn btn-primary"
+                                id="scan-btn"
+                                hx-post="/discovery/scan-network"
+                                hx-target="#scan-results"
+                                hx-swap="innerHTML"
+                                hx-vals='{"base_ip": ""}'
+                                hx-include="#scan_base_ip"
+                                hx-disabled-elt="this"
+                                hx-indicator="#scan-loading"
+                                onclick="setHxVals(this, 'base_ip', 'scan_base_ip')">
+                            Scan Network
+                        </button>
+                        <span id="scan-loading" class="htmx-indicator scan-loading">
+                            <span class="spinner"></span> Scanning network…
+                        </span>
+                    </div>
+                    <small class="text-muted">Formats: 192.168.100.0 (full /24), 192.168.100.100-200 (partial range), 192.168.100.100-192.168.100.200 (explicit range)</small>
+                    {% include "partials/scan_history_dropdown.html" %}
+                </div>
+                <div id="scan-results"></div>
+            </div>
+
+            <!-- Single Camera Tab -->
+            <div id="tab-single-camera" class="discovery-tab">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Camera IP Address</label>
+                        <input type="text" id="discover_ip" class="form-input" placeholder="192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                        <label>Credential Set</label>
+                        <select id="discover_credential_id" class="form-input" onchange="applyCredential(this)">
+                            <option value="">Manual entry</option>
+                            {% for cred in credentials %}
+                            <option value="{{ cred.id }}" data-username="{{ cred.username }}" data-password="{{ cred.password }}">{{ cred.name }} ({{ cred.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="discover_username" class="form-input" placeholder="admin" value="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="discover_password" class="form-input" placeholder="password">
+                    </div>
+                </div>
+                <button class="btn btn-primary"
+                        id="discover-btn"
+                        hx-post="/discovery/discover"
+                        hx-target="#discover-results"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt="this"
+                        hx-indicator="#discover-loading"
+                        onclick="setDiscoverVals(this)">
+                    Discover Camera
+                </button>
+                <span id="discover-loading" class="htmx-indicator scan-loading">
+                    <span class="spinner"></span> Probing camera…
+                </span>
+                <div id="discover-results" style="margin-top: 16px;"></div>
+            </div>
+
+            <!-- Brand Lookup Tab -->
+            <div id="tab-brand-lookup" class="discovery-tab">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <select id="brand_select" class="form-input">
+                            {% for key, brand in brands.items() %}
+                            <option value="{{ key }}">{{ brand.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Camera IP</label>
+                        <input type="text" id="brand_ip" class="form-input" placeholder="192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="brand_username" class="form-input" placeholder="admin" value="admin">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="brand_password" class="form-input" placeholder="password">
+                    </div>
+                </div>
+                <button class="btn btn-primary"
+                        id="brand-urls-btn"
+                        hx-post="/discovery/brand-urls"
+                        hx-target="#brand-urls-results"
+                        hx-swap="innerHTML"
+                        hx-disabled-elt="this"
+                        hx-indicator="#brand-urls-loading"
+                        onclick="setBrandVals(this)">
+                    Get Stream URLs
+                </button>
+                <span id="brand-urls-loading" class="htmx-indicator scan-loading">
+                    <span class="spinner"></span> Generating URLs…
+                </span>
+                <div id="brand-urls-results" style="margin-top: 16px;"></div>
+            </div>
+
+            <!-- Custom Brands Tab -->
+            <div id="tab-custom-brands" class="discovery-tab">
+                <p class="text-muted" style="margin-bottom: 12px;">
+                    Add custom camera brands or override existing ones (e.g. add new ports to Reolink).
+                    Custom brands are stored locally and merged with built-in brands during discovery.
+                </p>
+                <div id="custom-brands-container"
+                     hx-get="/discovery/brands"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Brand reference -->
+    <div class="card" style="margin-top: 16px;">
+        <div class="card-header"><h3>Supported Brands ({{ brands|length }})</h3></div>
+        <div class="card-body">
+            <div class="brand-reference-grid">
+                {% for key, brand in brands.items() %}
+                <div class="brand-reference-card">
+                    <div class="brand-reference-name">{{ brand.name }}</div>
+                    <div class="brand-reference-ports">
+                        <strong>Ports:</strong> {{ brand.common_ports|join(', ') }}
+                    </div>
+                    {% if brand.identifying_ports %}
+                    <div class="brand-reference-id">
+                        <strong>ID:</strong> {{ brand.identifying_ports|join(', ') }}
+                    </div>
+                    {% endif %}
+                    <div class="brand-reference-rtsp">
+                        <strong>RTSP:</strong> :{{ brand.rtsp_port }}
+                    </div>
+                    {% if brand.default_credentials.pass %}
+                    <div class="brand-reference-creds">
+                        <strong>Default:</strong> {{ brand.default_credentials.user }} / {{ brand.default_credentials.pass }}
+                    </div>
+                    {% endif %}
+                    {% if brand.notes %}
+                    <div class="brand-reference-notes">{{ brand.notes }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showDiscoveryTab(tabId) {
+    document.querySelectorAll('.discovery-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+
+    // Update button styles
+    document.querySelectorAll('.discovery-tabs button').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-secondary');
+    });
+    event.target.classList.remove('btn-secondary');
+    event.target.classList.add('btn-primary');
+}
+
+function setHxVals(btn, fieldName, inputId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        btn.setAttribute('hx-vals', JSON.stringify({[fieldName]: input.value}));
+    }
+}
+
+function selectScanTarget(target) {
+    const input = document.getElementById('scan_base_ip');
+    if (input) input.value = target;
+}
+
+function setDiscoverVals(btn) {
+    const ip = document.getElementById('discover_ip')?.value || '';
+    const user = document.getElementById('discover_username')?.value || 'admin';
+    const pass = document.getElementById('discover_password')?.value || '';
+    const credId = document.getElementById('discover_credential_id')?.value || '';
+    btn.setAttribute('hx-vals', JSON.stringify({ip, username: user, password: pass, credential_id: credId}));
+}
+
+function applyCredential(sel) {
+    const opt = sel.selectedOptions[0];
+    const user = opt?.dataset.username || '';
+    const pass = opt?.dataset.password || '';
+    if (user) document.getElementById('discover_username').value = user;
+    if (pass) document.getElementById('discover_password').value = pass;
+}
+
+function setDiscoverFromScan(btn, ip) {
+    const safeIp = ip.replace(/\./g, '-');
+    const user = document.getElementById('user-' + safeIp)?.value || 'admin';
+    const pass = document.getElementById('pass-' + safeIp)?.value || '';
+    btn.setAttribute('hx-vals', JSON.stringify({ip, username: user, password: pass}));
+}
+
+function setBrandVals(btn) {
+    const brand = document.getElementById('brand_select')?.value || '';
+    const ip = document.getElementById('brand_ip')?.value || '';
+    const user = document.getElementById('brand_username')?.value || 'admin';
+    const pass = document.getElementById('brand_password')?.value || '';
+    btn.setAttribute('hx-vals', JSON.stringify({brand_key: brand, ip, username: user, password: pass}));
+}
+</script>

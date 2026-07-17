@@ -1,0 +1,23 @@
+{% if error %}
+<div class="test-result test-fail">{{ error }}</div>
+{% else %}
+<div class="discovery-port-results">
+    <div class="port-list" style="margin-bottom: 12px;">
+        {% for port in open_ports %}
+        <span class="port-badge port-large">{{ port }}</span>
+        {% endfor %}
+    </div>
+    {% if brands %}
+    <div class="brand-list">
+        {% for key, brand, score in brands %}
+        <div class="brand-match {{ 'brand-best' if loop.first else '' }}">
+            <span class="brand-name">{{ brand.name }}</span>
+            <span class="brand-score">match: {{ score }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No known brand patterns matched.</p>
+    {% endif %}
+</div>
+{% endif %}

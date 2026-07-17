@@ -1,0 +1,19 @@
+{% if scan_history %}
+<div class="scan-history-dropdown" id="scan-history-dropdown">
+    <div class="scan-history-header">
+        <span class="text-muted">Recent scans</span>
+    </div>
+    {% for item in scan_history %}
+    <div class="scan-history-item">
+        <button type="button" class="scan-history-target"
+                onclick="selectScanTarget('{{ item.target }}')">{{ item.target }}</button>
+        <button type="button" class="btn btn-small btn-ghost scan-history-remove"
+                hx-post="/discovery/scan-history/delete"
+                hx-vals='{"target": "{{ item.target }}"}'
+                hx-target="#scan-history-dropdown"
+                hx-swap="outerHTML"
+                title="Remove from history">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

@@ -1,0 +1,65 @@
+<div id="camera-list-container" class="camera-list-view">
+    <div class="page-header">
+        <h2>Cameras</h2>
+        <button class="btn btn-primary"
+                hx-get="/cameras/new" hx-target="#camera-form-area" hx-swap="innerHTML">
+            + Add Camera
+        </button>
+    </div>
+
+    <div id="camera-form-area"></div>
+
+    {% if cameras %}
+    <div class="camera-cards">
+        {% for name, cam in cameras.items() %}
+        <div class="camera-card" id="camera-card-{{ name }}">
+            <div class="camera-card-header">
+                <h3>{{ name }}</h3>
+                {% if cam.enabled is defined and not cam.enabled %}
+                <span class="badge badge-muted">Disabled</span>
+                {% else %}
+                <span class="badge badge-active">Active</span>
+                {% endif %}
+            </div>
+            <div class="camera-card-body">
+                <div class="camera-info">
+                    <div class="info-row">
+                        <span class="info-label">Streams:</span>
+                        <span>{{ camera_streams.get(name, [])|join(", ") if camera_streams and camera_streams.get(name) else "none" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Detect:</span>
+                        <span>{{ cam.detect.enabled if cam.detect is defined and cam.detect.enabled is defined else "default" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Record:</span>
+                        <span>{{ cam.record.enabled if cam.record is defined and cam.record.enabled is defined else "default" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Objects:</span>
+                        <span>{{ cam.objects.track|join(", ") if cam.objects is defined and cam.objects.track is defined else "default" }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="camera-card-footer">
+                <a href="/cameras/{{ name }}" hx-get="/cameras/{{ name }}" hx-target="#main-content" hx-swap="innerHTML"
+                   class="btn btn-small">Edit</a>
+                <button class="btn btn-small btn-danger"
+                        hx-delete="/cameras/{{ name }}" hx-target="#camera-list-container" hx-swap="innerHTML"
+                        hx-confirm="Delete camera '{{ name }}' and its streams?">
+                    Delete
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No cameras configured yet.</p>
+        <button class="btn btn-primary"
+                hx-get="/cameras/new" hx-target="#camera-form-area" hx-swap="innerHTML">
+            + Add Your First Camera
+        </button>
+    </div>
+    {% endif %}
+</div>

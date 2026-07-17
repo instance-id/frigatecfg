@@ -1,0 +1,6 @@
+<div class="stream-test-result">
+  <div class="test-result {{ 'test-success' if result.success else 'test-fail' }}{{ ' test-warning' if result.get('warning') else '' }}">
+    {% if stream_name %}<strong>{{ stream_name }}:</strong> {% endif %}{{ result.message }}
+    <button type="button" class="btn btn-small btn-ghost test-dismiss" onclick="dismissTestResult(this)">&times;</button>
+  </div>
+</div>

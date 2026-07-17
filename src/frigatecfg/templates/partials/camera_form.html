@@ -1,0 +1,68 @@
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card camera-form-card">
+    <div class="card-header">
+        <h3>{{ "New Camera" if is_new else "Edit Camera" }}</h3>
+        <button type="button" class="btn btn-small btn-ghost" onclick="document.getElementById('camera-form-area').innerHTML=''">
+            Cancel
+        </button>
+    </div>
+    <div class="card-body">
+        <form hx-post="/cameras/" hx-target="#camera-list-container" hx-swap="innerHTML"
+              class="camera-form">
+
+            <div class="form-group">
+                <label for="name">Camera Name</label>
+                <input type="text" name="name" id="name" required
+                       placeholder="e.g. front_door"
+                       value="{{ camera_name if not is_new else '' }}"
+                       class="form-input">
+                <p class="form-hint">Used as the camera identifier in config. No spaces.</p>
+            </div>
+
+            <div class="form-group">
+                <label>Enabled</label>
+                <label class="toggle">
+                    <input type="checkbox" name="enabled" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Camera Type</label>
+                <select name="type" id="type" class="form-input">
+                    <option value="generic" selected>Generic</option>
+                    <option value="lpr">LPR (License Plate Recognition)</option>
+                </select>
+            </div>
+
+            <h4 class="form-section-title">go2rtc Streams</h4>
+            <p class="form-hint">Define the RTSP streams for this camera. A main and sub stream are typical.
+            Streams are automatically named based on the camera name.</p>
+
+            <div id="stream-rows">
+                <div class="stream-row" data-index="0">
+                    <div class="stream-row-fields">
+                        <input type="text" name="stream_name_0" placeholder="Stream name (e.g. front_door_main)"
+                               class="form-input stream-name-input">
+                        <input type="text" name="stream_url_0" placeholder="rtsp://user:pass@ip/path"
+                               class="form-input stream-url-input">
+                    </div>
+                    <div class="stream-row-actions">
+                        <button type="button" class="btn btn-small btn-ghost" onclick="testStream(this)">Test</button>
+                        <button type="button" class="btn btn-small btn-ghost" onclick="removeStreamRow(this)">&times;</button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-small btn-secondary" onclick="addStreamRow()">+ Add Stream</button>
+
+            <div id="test-result-area"></div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Camera</button>
+            </div>
+        </form>
+    </div>
+</div>

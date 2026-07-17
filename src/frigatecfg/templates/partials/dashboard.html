@@ -1,0 +1,124 @@
+<div class="dashboard">
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header">
+                <h2>Cameras</h2>
+                <a href="/cameras/" hx-get="/cameras/" hx-target="#main-content" hx-swap="innerHTML"
+                   class="btn btn-small">Manage</a>
+            </div>
+            <div class="card-body">
+                <div class="stat-row">
+                    <span class="stat-label">Total</span>
+                    <span class="stat-value">{{ cameras|length }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Enabled</span>
+                    <span class="stat-value">{{ cameras.values()|selectattr('enabled', 'undefined')|list|length + cameras.values()|selectattr('enabled')|list|length }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">go2rtc Streams</span>
+                    <span class="stat-value">{{ streams|length }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Frigate Status</h2>
+                <a href="/actions/" hx-get="/actions/" hx-target="#main-content" hx-swap="innerHTML"
+                   class="btn btn-small">Controls</a>
+            </div>
+            <div class="card-body">
+                <div class="stat-row">
+                    <span class="stat-label">Container</span>
+                    <span class="stat-value">
+                        <span class="status-dot {{ 'status-running' if frigate_status.running else 'status-stopped' }}"></span>
+                        {{ frigate_status.status|capitalize }}
+                    </span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Cameras</span>
+                    <span class="stat-value">{{ cameras|length }} configured</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Config Versions</span>
+                    <span class="stat-value">{{ total_versions }}</span>
+                </div>
+                <div class="form-actions" style="margin-top: 12px;">
+                    <button type="button" class="btn btn-sm"
+                            hx-post="/actions/restart"
+                            hx-target="#restart-result"
+                            hx-swap="innerHTML"
+                            hx-confirm="Restart Frigate container now?">
+                        Restart Frigate
+                    </button>
+                    <span id="restart-result" style="margin-left: 8px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Recent Changes</h2>
+                <a href="/versions" hx-get="/versions" hx-target="#main-content" hx-swap="innerHTML"
+                   class="btn btn-small">All</a>
+            </div>
+            <div class="card-body">
+                {% if versions %}
+                <div class="version-list">
+                    {% for v in versions[:5] %}
+                    <div class="version-item">
+                        <span class="version-num">v{{ v.version }}</span>
+                        <span class="version-desc">{{ v.description or "No description" }}</span>
+                        <span class="version-date">{{ v.created_at[:19] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No saved versions yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>Camera Overview</h2>
+        </div>
+        <div class="card-body">
+            {% if cameras %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Enabled</th>
+                        <th>Streams</th>
+                        <th>Record</th>
+                        <th>Detect</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, cam in cameras.items() %}
+                    <tr>
+                        <td><strong>{{ name }}</strong></td>
+                        <td>{{ cam.enabled if cam.enabled is defined else True }}</td>
+                        <td>
+                            {{ camera_streams.get(name, [])|join(", ") if camera_streams.get(name) else "none" }}
+                        </td>
+                        <td>{{ cam.record.enabled if cam.record is defined and cam.record.enabled is defined else False }}</td>
+                        <td>{{ cam.detect.enabled if cam.detect is defined and cam.detect.enabled is defined else False }}</td>
+                        <td>
+                            <a href="/cameras/{{ name }}" hx-get="/cameras/{{ name }}" hx-target="#main-content" hx-swap="innerHTML"
+                               class="btn btn-small">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No cameras configured. <a href="/cameras/" hx-get="/cameras/" hx-target="#main-content" hx-swap="innerHTML">Add one &rarr;</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>

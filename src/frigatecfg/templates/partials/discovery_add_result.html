@@ -1,0 +1,7 @@
+{% if error %}
+<div class="test-result test-fail">{{ error }}</div>
+{% elif success %}
+<div class="test-result test-pass">
+    Camera '{{ camera_name }}' added successfully. Configure it in the Cameras tab.
+</div>
+{% endif %}

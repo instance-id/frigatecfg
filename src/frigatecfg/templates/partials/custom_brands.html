@@ -1,0 +1,71 @@
+<div class="custom-brands-section">
+    {% if error %}
+    <div class="test-result test-fail">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="test-result test-success">{{ success }}</div>
+    {% endif %}
+
+    <div class="custom-brands-header">
+        <h4>Custom & Override Brands</h4>
+        <button class="btn btn-small btn-primary" onclick="showAddBrandForm()">
+            + Add Brand
+        </button>
+    </div>
+
+    <div id="brand-form-area"></div>
+
+    {% if custom_brands %}
+    <div class="custom-brand-list">
+        {% for brand in custom_brands %}
+        <div class="custom-brand-item">
+            <div class="custom-brand-info">
+                <span class="custom-brand-name">{{ brand.name }}</span>
+                {% if brand.is_override %}
+                <span class="cap-badge cap-warn">Override</span>
+                {% else %}
+                <span class="cap-badge cap-yes">Custom</span>
+                {% endif %}
+                <span class="custom-brand-key">({{ brand.key }})</span>
+            </div>
+            <div class="custom-brand-details">
+                <span>Ports: {{ brand.data.get('common_ports', [])|join(', ') }}</span>
+                {% if brand.data.get('identifying_ports') %}
+                <span>| ID: {{ brand.data.identifying_ports|join(', ') }}</span>
+                {% endif %}
+                {% if brand.data.get('rtsp_port') %}
+                <span>| RTSP: {{ brand.data.rtsp_port }}</span>
+                {% endif %}
+            </div>
+            <div class="custom-brand-actions">
+                <button class="btn btn-small btn-ghost"
+                        hx-get="/discovery/brands/{{ brand.key }}/edit"
+                        hx-target="#brand-form-area"
+                        hx-swap="innerHTML">
+                    Edit
+                </button>
+                <button class="btn btn-small btn-danger"
+                        hx-post="/discovery/brands/{{ brand.key }}/delete"
+                        hx-target="#custom-brands-container"
+                        hx-swap="innerHTML"
+                        hx-confirm="Delete brand '{{ brand.name }}'?">
+                    Delete
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No custom brands yet. Add a new brand or override an existing one.</p>
+    {% endif %}
+</div>
+
+<script>
+function showAddBrandForm() {
+    fetch('/discovery/brands/add-form')
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById('brand-form-area').innerHTML = html;
+        });
+}
+</script>

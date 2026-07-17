@@ -1,0 +1,22 @@
+{% if error %}
+<div class="test-result test-fail">{{ error }}</div>
+{% else %}
+<div class="discovery-brand-urls">
+    <h4>Suggested Stream URLs</h4>
+    {% for stream_type, url in urls.items() %}
+    <div class="brand-url-item">
+        <div class="brand-url-type">{{ stream_type|capitalize }}</div>
+        <div class="brand-url-value"><code>{{ url }}</code></div>
+        <div class="brand-url-actions">
+            <button class="btn btn-small btn-ghost"
+                    hx-post="/discovery/test-stream"
+                    hx-target="this"
+                    hx-swap="outerHTML"
+                    hx-vals='{"url": "{{ url }}", "stream_name": "{{ stream_type }}"}'>
+                Test
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
