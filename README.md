@@ -1,6 +1,6 @@
 # Frigate Config Manager
 
-A web-based configuration management UI for [Frigate](https://frigate.video/) — an open-source NVR with AI object detection.
+A web-based configuration management UI for [Frigate](https://frigate.video/) - an open-source NVR with AI object detection.
 
 Frigate Config Manager provides an easier interface to edit your Frigate `config.yml` without manually writing YAML. It manages cameras, streams, detectors, MQTT, notifications, and most all other Frigate config sections through form-driven editors.
 
