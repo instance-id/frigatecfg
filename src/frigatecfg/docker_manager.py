@@ -76,7 +76,14 @@ def restart_frigate() -> dict[str, Any]:
 
 
 def get_frigate_status() -> dict[str, Any]:
-    """Get frigate container status via Docker Engine API."""
+    """Get frigate container status via Docker Engine API.
+
+    Returns dict with:
+        running: bool
+        status: raw Docker status string (running, exited, restarting, etc.)
+        label: human-friendly label for display
+        health: health status if available (starting, healthy, unhealthy, none)
+    """
     container = get_frigate_container_name()
     try:
         status, body = _docker_request("GET", f"/containers/{container}/json", timeout=10)
@@ -84,11 +91,36 @@ def get_frigate_status() -> dict[str, Any]:
             info = json.loads(body)
             state = info.get("State", {})
             running = state.get("Running", False)
-            return {"running": running, "status": state.get("Status", "unknown")}
+            docker_status = state.get("Status", "unknown")
+
+            # Health check (if configured)
+            health_state = state.get("Health", {})
+            health = health_state.get("Status", "none") if health_state else "none"
+
+            # Derive a user-friendly label
+            if docker_status == "restarting":
+                label = "restarting"
+            elif not running:
+                label = "stopped"
+            elif health == "starting":
+                label = "starting"
+            elif health == "unhealthy":
+                label = "unhealthy"
+            elif running and health in ("healthy", "none"):
+                label = "running"
+            else:
+                label = docker_status
+
+            return {
+                "running": running,
+                "status": docker_status,
+                "label": label,
+                "health": health,
+            }
         else:
-            return {"running": False, "status": "not found"}
+            return {"running": False, "status": "not found", "label": "not found", "health": "none"}
     except Exception:
-        return {"running": False, "status": "error"}
+        return {"running": False, "status": "error", "label": "error", "health": "none"}
 
 
 def test_rtsp_connection(url: str, timeout: float = 10.0) -> dict[str, Any]:

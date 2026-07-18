@@ -1,2 +1,15 @@
-<span class="status-dot {{ 'status-running' if status.running else 'status-stopped' }}"></span>
-<span class="status-text">{{ status.status }}</span>
+<span class="status-dot status-{{ status.label }}"></span>
+<span class="status-text">{{ status.label|capitalize }}</span>
+<script>
+(function() {
+    var el = document.getElementById('frigate-status');
+    if (el && typeof htmx !== 'undefined') {
+        {% if status.running %}
+        el.setAttribute('hx-trigger', 'load, every 30s');
+        {% else %}
+        el.setAttribute('hx-trigger', 'load, every 2s');
+        {% endif %}
+        htmx.process(el);
+    }
+})();
+</script>

@@ -1,6 +1,18 @@
 <div class="alert {{ 'alert-success' if result.success else 'alert-error' }}" id="action-feedback">
     {{ result.message }}
 </div>
+{% if action == "restart" and result.success %}
+<script>
+(function() {
+    var el = document.getElementById('frigate-status');
+    if (el && typeof htmx !== 'undefined') {
+        el.setAttribute('hx-trigger', 'load, every 2s');
+        htmx.process(el);
+        htmx.trigger(el, 'load');
+    }
+})();
+</script>
+{% endif %}
 {% if action == "undo" or action == "redo" %}
 <script>
     {% if can_undo is defined and not can_undo %}

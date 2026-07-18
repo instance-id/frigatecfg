@@ -588,6 +588,32 @@ html, body
 .status-stopped
   background: $danger
 
+.status-restarting
+  background: $warning
+  animation: status-pulse 1s ease-in-out infinite
+
+.status-starting
+  background: $warning
+  animation: status-pulse 1.5s ease-in-out infinite
+
+.status-unhealthy
+  background: $danger
+  animation: status-pulse 2s ease-in-out infinite
+
+.status-error
+  background: $danger
+
+.status-not-found
+  background: $text-muted
+
+@keyframes status-pulse
+  0%, 100%
+    opacity: 1
+    box-shadow: 0 0 6px currentColor
+  50%
+    opacity: 0.4
+    box-shadow: 0 0 2px currentColor
+
 // Page header
 .page-header
   display: flex

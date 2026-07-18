@@ -32,8 +32,8 @@
                 <div class="stat-row">
                     <span class="stat-label">Container</span>
                     <span class="stat-value">
-                        <span class="status-dot {{ 'status-running' if frigate_status.running else 'status-stopped' }}"></span>
-                        {{ frigate_status.status|capitalize }}
+                        <span class="status-dot status-{{ frigate_status.label }}"></span>
+                        {{ frigate_status.label|capitalize }}
                     </span>
                 </div>
                 <div class="stat-row">
