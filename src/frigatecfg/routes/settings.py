@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request
 
 from .. import models
 from ..config_manager import load_config, save_config, deep_clone, deep_get, deep_set, get_cameras
-from ..config_schema import SECTION_MAP, ALL_SECTIONS
+from ..config_schema import SECTION_MAP, ALL_SECTIONS, FieldType
 
 bp = Blueprint("settings", __name__)
 
@@ -72,9 +72,14 @@ def parse_section_from_form(section, form, prefix="", current_value=None) -> dic
             if key.strip():
                 item = {}
                 for field in section.item_fields:
-                    val = form.get(f"{prefix}_{i}_{field.name}")
-                    if val is not None:
-                        item[field.name] = _convert_value(val, field)
+                    if field.type == FieldType.LIST:
+                        items = form.getlist(f"{prefix}_{i}_{field.name}")
+                        if items:
+                            item[field.name] = items
+                    else:
+                        val = form.get(f"{prefix}_{i}_{field.name}")
+                        if val is not None:
+                            item[field.name] = _convert_value(val, field)
                 result[key.strip()] = item
             i += 1
         return result
@@ -87,8 +92,6 @@ def parse_section_from_form(section, form, prefix="", current_value=None) -> dic
 
 def _parse_field(form, field, result, prefix=""):
     field_key = f"{prefix}_{field.name}" if prefix else field.name
-
-    from ..config_schema import FieldType
 
     if field.type == FieldType.SECTION:
         sub = {}
@@ -139,8 +142,6 @@ def _parse_field(form, field, result, prefix=""):
 
 
 def _convert_value(val, field):
-    from ..config_schema import FieldType
-
     if field.type in (FieldType.INTEGER,):
         try:
             return int(val)
