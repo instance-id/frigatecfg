@@ -140,6 +140,28 @@ def edit_camera(name):
 
     # Current record output preset (camera-level override)
     record_output_preset = camera.get("ffmpeg", {}).get("output_args", {}).get("record", "")
+    record_output_is_custom = bool(record_output_preset) and not record_output_preset.startswith("preset-")
+    record_segment_time = 10
+    record_audio_mode = "none"
+    record_custom_args = ""
+    if record_output_is_custom:
+        record_custom_args = record_output_preset
+        import shlex
+        try:
+            parts = shlex.split(record_output_preset)
+            if "-segment_time" in parts:
+                idx = parts.index("-segment_time")
+                record_segment_time = int(parts[idx + 1])
+            if "-c:a" in parts:
+                aidx = parts.index("-c:a")
+                if aidx + 1 < len(parts) and parts[aidx + 1] == "aac":
+                    record_audio_mode = "aac"
+                else:
+                    record_audio_mode = "copy"
+            elif "-an" not in parts and "-c:v" in parts:
+                record_audio_mode = "copy"
+        except (ValueError, IndexError):
+            pass
 
     return render_template(
         "partials/camera_editor.html",
@@ -149,6 +171,10 @@ def edit_camera(name):
         stream_roles=stream_roles,
         live_stream_name=live_stream_name,
         record_output_preset=record_output_preset,
+        record_output_is_custom=record_output_is_custom,
+        record_segment_time=record_segment_time,
+        record_audio_mode=record_audio_mode,
+        record_custom_args=record_custom_args,
         camera_fields=CAMERA_FIELDS,
         override_sections=CAMERA_OVERRIDE_SECTIONS,
         section_map=SECTION_MAP,
@@ -195,11 +221,11 @@ def update_camera_route(name):
             existing_ff["output_args"].update(cam_ff.pop("output_args"))
         existing_ff.update(cam_ff)
         camera_data.pop("ffmpeg")
-    # Deep-merge record dict to preserve nested settings (alerts, detections, retain)
+    # Deep-merge record dict to preserve nested settings (alerts, detections, continuous, motion)
     if "record" in camera_data and "record" in camera:
         existing_record = camera["record"]
         new_record = camera_data["record"]
-        for key in ("alerts", "detections", "retain"):
+        for key in ("alerts", "detections", "continuous", "motion"):
             if key in new_record and key in existing_record:
                 existing_record[key].update(new_record.pop(key))
         existing_record.update(new_record)
@@ -339,13 +365,15 @@ def parse_camera_from_form(form) -> dict:
     if camera["record"]["enabled"]:
         record = camera["record"]
 
-        # Retain settings
-        retain_days = form.get("record_retain_days")
-        retain_mode = form.get("record_retain_mode", "").strip()
-        if retain_days is not None:
-            record["retain"] = {"days": int(retain_days) if retain_days else 0}
-            if retain_mode:
-                record["retain"]["mode"] = retain_mode
+        # Continuous retention settings
+        continuous_days = form.get("record_continuous_days")
+        if continuous_days is not None:
+            record["continuous"] = {"days": int(continuous_days) if continuous_days else 0}
+
+        # Motion retention settings
+        motion_days = form.get("record_motion_days")
+        if motion_days is not None:
+            record["motion"] = {"days": int(motion_days) if motion_days else 0}
 
         # Expire interval
         expire_interval = form.get("record_expire_interval")
@@ -453,7 +481,22 @@ def parse_camera_from_form(form) -> dict:
 
     # Record output preset - camera-level ffmpeg.output_args.record override
     record_preset = form.get("record_output_preset", "").strip()
-    if record_preset:
+    if record_preset == "__custom__":
+        seg_time = form.get("record_segment_time", "10").strip()
+        try:
+            seg_time = int(seg_time)
+        except ValueError:
+            seg_time = 10
+        seg_time = max(10, min(60, seg_time))
+        audio_mode = form.get("record_audio_mode", "none").strip()
+        if audio_mode == "aac":
+            custom_args = f"-f segment -segment_time {seg_time} -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac"
+        elif audio_mode == "copy":
+            custom_args = f"-f segment -segment_time {seg_time} -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy"
+        else:
+            custom_args = f"-f segment -segment_time {seg_time} -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy -an"
+        camera.setdefault("ffmpeg", {}).setdefault("output_args", {})["record"] = custom_args
+    elif record_preset:
         camera.setdefault("ffmpeg", {}).setdefault("output_args", {})["record"] = record_preset
 
     return camera

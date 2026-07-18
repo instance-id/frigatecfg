@@ -73,15 +73,38 @@
                     </div>
                     <div class="form-group">
                         <label for="record_output_preset">Record Output Preset
-                            {{ tooltip("Recording output format preset. No Audio: strips audio. Audio Copy: preserves original codec. Audio AAC: transcodes for compatibility.", "https://docs.frigate.video/configuration/ffmpeg_presets#record-presets") }}
+                            {{ tooltip("Recording output format. Presets use 10s segments. Custom lets you adjust segment time (max 60s) and audio handling.", "https://docs.frigate.video/configuration/ffmpeg_presets#record-presets") }}
                         </label>
-                        <select name="record_output_preset" id="record_output_preset" class="form-input">
+                        <select name="record_output_preset" id="record_output_preset" class="form-input" onchange="toggleRecordCustom(this)">
                             <option value="" {{ 'selected' if not record_output_preset }}>Default (global)</option>
                             <option value="preset-record-generic" {{ 'selected' if record_output_preset == 'preset-record-generic' }}>No Audio (generic)</option>
                             <option value="preset-record-generic-audio-copy" {{ 'selected' if record_output_preset == 'preset-record-generic-audio-copy' }}>Audio Copy (original codec)</option>
                             <option value="preset-record-generic-audio-aac" {{ 'selected' if record_output_preset == 'preset-record-generic-audio-aac' }}>Audio AAC (transcoded)</option>
+                            <option value="__custom__" {{ 'selected' if record_output_is_custom }}>Custom</option>
                         </select>
-                        <p class="form-hint">Recording output format. Use Audio Copy if camera has audio to preserve original codec. Use AAC if player compatibility issues.</p>
+                        <p class="form-hint">Recording output format. Use Audio Copy if camera has audio. Use Custom to adjust segment time.</p>
+                    </div>
+                    <div class="form-group" id="record_custom_fields" style="display: {{ 'block' if record_output_is_custom else 'none' }};">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="record_segment_time">Segment Time (s)
+                                    {{ tooltip("Seconds per recording segment. Larger = fewer files, less disk I/O. Max 60.", "https://docs.frigate.video/configuration/ffmpeg_presets#record-presets") }}
+                                </label>
+                                <input type="number" name="record_segment_time" id="record_segment_time"
+                                       value="{{ record_segment_time }}" class="form-input" min="10" max="60">
+                            </div>
+                            <div class="form-group">
+                                <label for="record_audio_mode">Audio
+                                    {{ tooltip("No Audio: strip audio. Copy: preserve original codec. AAC: transcode for compatibility.", "") }}
+                                </label>
+                                <select name="record_audio_mode" id="record_audio_mode" class="form-input">
+                                    <option value="none" {{ 'selected' if record_audio_mode == 'none' }}>No Audio</option>
+                                    <option value="copy" {{ 'selected' if record_audio_mode == 'copy' }}>Copy (original)</option>
+                                    <option value="aac" {{ 'selected' if record_audio_mode == 'aac' }}>AAC (transcoded)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="form-hint">Custom args: <code>{{ record_custom_args }}</code></p>
                     </div>
                 </div>
             </div>
@@ -345,22 +368,18 @@
                 <p class="form-hint">Settings below only apply when Record Enabled is checked in Enabled Features above.</p>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="record_retain_days">Continuous Retain (days)
+                        <label for="record_continuous_days">Continuous Retain (days)
                             {{ tooltip("Days to retain all continuous recordings regardless of tracked objects or motion. Set to 0 to only retain event-based recordings (recommended).", "https://docs.frigate.video/configuration/record") }}
                         </label>
-                        <input type="number" name="record_retain_days" id="record_retain_days"
-                               value="{{ camera.get("record", {}).get("retain", {}).get("days", 0) }}" class="form-input" min="0">
+                        <input type="number" name="record_continuous_days" id="record_continuous_days"
+                               value="{{ camera.get("record", {}).get("continuous", {}).get("days", 0) }}" class="form-input" min="0">
                     </div>
                     <div class="form-group">
-                        <label for="record_retain_mode">Retain Mode
-                            {{ tooltip("all: save all segments. motion: only segments with detected motion. active_objects: only segments with active/moving objects.", "https://docs.frigate.video/configuration/record") }}
+                        <label for="record_motion_days">Motion Retain (days)
+                            {{ tooltip("Days to retain recordings with detected motion. Set to 0 to only retain event-based recordings.", "https://docs.frigate.video/configuration/record") }}
                         </label>
-                        <select name="record_retain_mode" id="record_retain_mode" class="form-input">
-                            <option value="" {{ 'selected' if not camera.get("record", {}).get("retain", {}).get("mode") }}>Default (global)</option>
-                            <option value="all" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'all' }}>All</option>
-                            <option value="motion" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'motion' }}>Motion</option>
-                            <option value="active_objects" {{ 'selected' if camera.get("record", {}).get("retain", {}).get("mode") == 'active_objects' }}>Active Objects</option>
-                        </select>
+                        <input type="number" name="record_motion_days" id="record_motion_days"
+                               value="{{ camera.get("record", {}).get("motion", {}).get("days", 0) }}" class="form-input" min="0">
                     </div>
                     <div class="form-group">
                         <label for="record_expire_interval">Expire Interval (min)
@@ -576,6 +595,10 @@
 function toggleManualCreds(sel) {
     const manualFields = document.getElementById('manual-cred-fields');
     manualFields.style.display = (sel.value === 'manual') ? 'block' : 'none';
+}
+function toggleRecordCustom(sel) {
+    const customFields = document.getElementById('record_custom_fields');
+    customFields.style.display = (sel.value === '__custom__') ? 'block' : 'none';
 }
 // Show manual fields on load if "manual" is selected
 (function() {
